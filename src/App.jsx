@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import BottomNavigation from "./components/BottomNavigation";
 import LeadersPage from "./pages/leadersPage/leadersPage";
 import TasksPage from "./pages/tasksPage/tasksPage";
@@ -13,6 +19,14 @@ function App() {
   const [showPopup, setShowPopup] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname === "/" || location.pathname === "") {
+      navigate("/mining", { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const checkAccess = () => {
