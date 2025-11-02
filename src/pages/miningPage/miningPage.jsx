@@ -22,7 +22,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [liveFeedMessages, setLiveFeedMessages] = useState([]);
   const isInitialized = React.useRef(false);
 
-  // >>>>> СТРОГО ЧЕРЕЗ Telegram initData <<<<<
   const [tgUser, setTgUser] = useState(null);
   const [startParam, setStartParam] = useState(null);
   const [rawInitData, setRawInitData] = useState(null);
@@ -33,7 +32,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     console.log("🔍 Debug - tg exists:", !!tg);
 
     if (!tg) {
-      // фолбэк только для локальной разработки вне Telegram
       const fallbackUser = {
         username: "username_telegram",
         first_name: "Пользователь",
@@ -50,7 +48,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     console.log("🔍 Debug - tg.initDataUnsafe?.user:", tg.initDataUnsafe?.user);
     console.log("🔍 Debug - full tg object:", tg);
 
-    // Пробуем получить user несколько способами
     const u = tg.initDataUnsafe?.user || tg.webAppInitData?.user || null;
 
     console.log("🔍 Debug - user object:", u);
@@ -59,7 +56,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     setStartParam(tg.initDataUnsafe?.start_param ?? null);
     setRawInitData(tg.initData ?? null);
 
-    // Логирование данных пользователя и параметров запуска
     if (u) {
       console.log("👤 Telegram User Info:", {
         username: u.username || "не указан",
@@ -167,9 +163,16 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     );
   };
 
-  // Первичная инициализация логов — с использованием имени из initData
   useEffect(() => {
     if (isInitialized.current || !uiUser) return;
+
+    const hasVisitedBefore = localStorage.getItem("miningPageVisited");
+    if (hasVisitedBefore) {
+      isInitialized.current = true;
+      return;
+    }
+
+    localStorage.setItem("miningPageVisited", "true");
     isInitialized.current = true;
 
     const initialLive = [
@@ -198,18 +201,15 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     let i = 0;
     const addMessage = () => {
       if (i < 3) {
-        // Добавляем первые 3 сообщения
         setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
         i++;
         setTimeout(addMessage, 500);
       } else if (i === 3) {
-        // Добавляем строку синхронизации (одна строка: текст + прогресс)
         setTerminalLogs((prev) => [
           `[SYNC] Синхронизация узлов ${getProgressBar(0)}`,
           ...prev,
         ]);
 
-        // Анимируем синхронизацию (обновляем одну строку)
         const progressSteps = [0, 10, 25, 37, 49, 56, 85, 93, 97, 100];
         let progressIndex = 0;
 
@@ -218,7 +218,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             const currentPercent = progressSteps[progressIndex];
             setTerminalLogs((prev) => {
               const newLogs = [...prev];
-              // Обновляем строку синхронизации (одна строка)
               const syncLineIndex = newLogs.findIndex((log) =>
                 log.startsWith("[SYNC] Синхронизация узлов")
               );
@@ -235,7 +234,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             if (progressIndex < progressSteps.length) {
               setTimeout(updateSyncProgress, 400);
             } else {
-              // После завершения синхронизации добавляем остальные сообщения
               setTimeout(() => {
                 setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
                 setTimeout(() => {
@@ -302,13 +300,12 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
   const getProgressBar = (percent) => {
     if (percent === undefined || percent === null) return "";
-    const blocks = 8; // более компактная шкала
+    const blocks = 8;
     const filled = Math.floor((percent / 100) * blocks);
     const progressBar = "█".repeat(filled) + "░".repeat(blocks - filled);
     return `${progressBar} ${percent}%`;
   };
 
-  // Рендер строки лайв-ленты с подсветкой суммы и знака биткоина
   const renderLiveMessage = (msg, index) => {
     const match = msg.match(/^(.*?)(\d+)₿(.*)$/);
     if (!match) {
@@ -336,7 +333,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     const username = uiUser.username || "username";
     const displayName = uiUser.displayName || "Пользователь";
 
-    // Сначала добавляем подготовительные сообщения
     const prepMessages = ["[SCAN] Подключение к узлам..."];
 
     const finalMessages = [
@@ -355,7 +351,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         messageIndex++;
         setTimeout(addPrepMessage, 500);
       } else {
-        // Добавляем синхронизацию сети: одна строка (текст + прогресс)
         setTerminalLogs((prev) => [
           `[NET] Синхронизация узлов ${getProgressBar(0)}`,
           ...prev,
@@ -369,7 +364,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             const currentPercent = progressSteps[progressIndex];
             setTerminalLogs((prev) => {
               const newLogs = [...prev];
-              // Обновляем одну строку с прогрессом
               const netLineIndex = newLogs.findIndex((log) =>
                 log.startsWith("[NET] Синхронизация узлов")
               );
@@ -386,7 +380,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             if (progressIndex < progressSteps.length) {
               setTimeout(updateProgress, 400);
             } else {
-              // После завершения прогресса выводим финальные сообщения
               addFinalMessages();
             }
           }
@@ -443,7 +436,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         </div>
 
         <div className={styles.welcomeSlider}>
-          {/* Слайдер временно отключён. Оставляем один welcomeCard */}
           <div className={styles.welcomeCard}>
             <div className={styles.welcomeContent}>
               <div className={styles.symbolsRow}>

@@ -5,7 +5,7 @@ const ToastNotification = ({ onClose, duration = 4000 }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const interval = duration / 100; // разбиваем на 100 шагов для плавной анимации
+    const interval = duration / 100;
     const step = 100 / (duration / interval);
 
     const timer = setInterval(() => {

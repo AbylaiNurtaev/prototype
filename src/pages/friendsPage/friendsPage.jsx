@@ -7,17 +7,14 @@ const FriendsPage = () => {
   const [isButtonDark, setIsButtonDark] = useState(false);
 
   const handleCopyClick = () => {
-    // Копирование ссылки (можете добавить реальную логику копирования)
     const linkToCopy = window.location.href;
     navigator.clipboard.writeText(linkToCopy);
 
-    // Затемнение кнопки на секунду
     setIsButtonDark(true);
     setTimeout(() => {
       setIsButtonDark(false);
     }, 1000);
 
-    // Показ уведомления
     setShowToast(true);
   };
 

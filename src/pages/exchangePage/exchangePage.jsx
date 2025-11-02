@@ -76,10 +76,8 @@ const ExchangePage = ({ onInputFocus }) => {
       <div className={styles.bgBottom} />
       <div className={styles.prototypeText}>prototype</div>
       <div className={styles.exchangeCard}>
-        {/* Заголовок */}
         <h2 className={styles.title}>Обменяйте игровую валюту на usdt</h2>
 
-        {/* Инпуты с автоконвертацией */}
         <div className={styles.inputsContainer}>
           <div className={styles.inputGroup}>
             <img
@@ -125,10 +123,8 @@ const ExchangePage = ({ onInputFocus }) => {
           </div>
         </div>
 
-        {/* Кнопка вывода */}
         <button className={styles.withdrawButton}>Вывод</button>
 
-        {/* Текущий курс */}
         <div className={styles.rateContainer}>
           <p className={styles.rateLabel}>Текущий курс вывода:</p>
           <div className={styles.rateValue}>

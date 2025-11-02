@@ -14,24 +14,20 @@ function App() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
 
-  // Проверка доступа
   useEffect(() => {
     const checkAccess = () => {
       const tg = window?.Telegram?.WebApp;
 
-      // Проверка Telegram
       if (!tg) {
         setAccessDenied("not-telegram");
         return;
       }
 
-      // Проверка мобильного устройства
       const isMobile =
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
           navigator.userAgent
         );
 
-      // Дополнительная проверка по ширине экрана (менее 768px считается мобильным)
       const isMobileScreen = window.innerWidth < 768;
 
       if (!isMobile && !isMobileScreen) {
@@ -39,7 +35,6 @@ function App() {
         return;
       }
 
-      // Если все проверки пройдены
       setAccessDenied(null);
     };
 
@@ -47,16 +42,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Если доступ запрещен, не инициализируем Telegram WebApp
     if (accessDenied) return;
 
     const tg = window?.Telegram?.WebApp;
     if (!tg) return;
 
-    // Инициализация Telegram WebApp
     tg.ready();
 
-    // Получаем данные пользователя из Telegram
     const user = tg.initDataUnsafe?.user;
     if (user) {
       console.log("Telegram User Data:", {
@@ -69,16 +61,13 @@ function App() {
       });
     }
 
-    // Настройка полноэкранного режима
-    tg.expand(); // Раскрывает WebApp на полный экран
-    tg.enableClosingConfirmation(); // Подтверждение закрытия
-    tg.disableVerticalSwipes(); // Отключаем вертикальные свайпы для предотвращения случайного закрытия при скролле
+    tg.expand();
+    tg.enableClosingConfirmation();
+    tg.disableVerticalSwipes();
 
-    // Настройка цветовой схемы
-    tg.setHeaderColor("#1a1a1a"); // Темный цвет заголовка
-    tg.setBackgroundColor("#1a1a1a"); // Темный фон
+    tg.setHeaderColor("#1a1a1a");
+    tg.setBackgroundColor("#1a1a1a");
 
-    // Функция для применения высоты viewport
     const applyVh = () => {
       const h = tg.viewportStableHeight || tg.viewportHeight;
       if (h) {
@@ -86,7 +75,6 @@ function App() {
           "--tg-viewport-height",
           `${h}px`
         );
-        // Устанавливаем высоту для body чтобы обеспечить скролл
         document.body.style.height = `${h}px`;
         document.body.style.overflowY = "auto";
       }
@@ -95,7 +83,6 @@ function App() {
     applyVh();
     tg.onEvent("viewportChanged", applyVh);
 
-    // Обработка изменения темы
     const handleThemeChange = () => {
       const theme = tg.colorScheme;
       document.documentElement.setAttribute("data-theme", theme);
@@ -110,10 +97,9 @@ function App() {
     };
   }, [accessDenied]);
 
-  // Если доступ запрещен, показываем экран блокировки
-  if (accessDenied) {
-    return <NoTelegramNoPhone reason={accessDenied} />;
-  }
+  // if (accessDenied) {
+  //   return <NoTelegramNoPhone reason={accessDenied} />;
+  // }
 
   return (
     <div className="app">

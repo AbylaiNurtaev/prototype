@@ -62,7 +62,6 @@ const BottomNavigation = ({ showPopup, isInputFocused }) => {
     if (currentTab) {
       return currentTab.id;
     }
-    // Проверка для подменю "Еще"
     if (location.pathname === "/profile" || location.pathname === "/friends") {
       return "more";
     }

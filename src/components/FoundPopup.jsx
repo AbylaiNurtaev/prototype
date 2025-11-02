@@ -7,7 +7,6 @@ const FoundPopup = ({
   collectedAmount = 257,
 }) => {
   useEffect(() => {
-    // Предотвращаем зум на телефонах
     const preventZoom = (e) => {
       if (e.touches && e.touches.length > 1) {
         e.preventDefault();
@@ -27,9 +26,6 @@ const FoundPopup = ({
     <div className={styles.popupOverlay} onClick={onClose}>
       <div className={styles.popupContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.foundCard}>
-          {/* Символы сверху */}
-
-          {/* Основное изображение */}
           <div className={styles.imageContainer}>
             <img
               src="/mine-icons/found.png"
@@ -38,12 +34,9 @@ const FoundPopup = ({
             />
           </div>
 
-          {/* Заголовок */}
           <div className={styles.foundTitle}>Найдено!</div>
 
-          {/* Информация о кошельке и балансе */}
           <div className={styles.infoContainer}>
-            {/* Адрес кошелька */}
             <div className={styles.walletInfo}>
               <div className={styles.walletIcon}>
                 <img
@@ -56,7 +49,6 @@ const FoundPopup = ({
               <span className={styles.walletAddress}>{walletAddress}</span>
             </div>
 
-            {/* Количество собранных биткоинов */}
             <div className={styles.balanceInfo}>
               <div className={styles.balanceIcon}>
                 <svg
@@ -83,7 +75,6 @@ const FoundPopup = ({
             </div>
           </div>
 
-          {/* Кнопка "Получить" */}
           <button className={styles.getButton} onClick={onClose}>
             <span className={styles.buttonText}>Получить</span>
           </button>
