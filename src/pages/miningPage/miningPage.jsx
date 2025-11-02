@@ -165,14 +165,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
   useEffect(() => {
     if (isInitialized.current || !uiUser) return;
-
-    const hasVisitedBefore = localStorage.getItem("miningPageVisited");
-    if (hasVisitedBefore) {
-      isInitialized.current = true;
-      return;
-    }
-
-    localStorage.setItem("miningPageVisited", "true");
     isInitialized.current = true;
 
     const initialLive = [
