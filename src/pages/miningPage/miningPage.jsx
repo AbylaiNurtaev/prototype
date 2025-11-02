@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import styles from "./Page.module.scss";
-import FoundPopup from "../components/FoundPopup";
+import styles from "../Page.module.scss";
+import FoundPopup from "../../components/FoundPopup";
 
 const MiningPage = ({ showPopup, setShowPopup }) => {
   const [activeTab, setActiveTab] = useState("token_finder");

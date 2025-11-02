@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import styles from "./ExchangePage.module.scss";
+import styles from "./exchangePage.module.scss";
 
 const ExchangePage = ({ onInputFocus }) => {
   const RATE_BTC_TO_USDT = 0.00012; // 100 BTC = 0.012 USDT

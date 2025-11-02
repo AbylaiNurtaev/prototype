@@ -8,6 +8,7 @@
   overflow: hidden;
   color: white;
   padding-bottom: 80px; /* Отступ для навигационной панели */
+  overscroll-behavior: none;
 }
 
 .pageContent {
@@ -207,6 +208,13 @@ color: #fff;
 padding: 10px 15px;
 width: 118px;
 height: 36px;
+  /* Отключаем выделение текста и длительное нажатие */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 
   &:hover {
     transform: translateY(-1px);
@@ -240,6 +248,13 @@ font-size: 12px;
 text-align: center;
 color: #fff;
 outline: none;
+  /* Отключаем выделение текста и длительное нажатие */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 
   &:hover {
 
@@ -302,6 +317,13 @@ outline: none;
   width: 177px;
   height: 36px;
   border: 1px solid rgba(79, 79, 79, 0.5);
+  /* Отключаем выделение текста и длительное нажатие */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 
   &:first-child {
     border-top-left-radius: 10px;
@@ -311,8 +333,8 @@ outline: none;
   }
 
   &:last-child {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 25px;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 10px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     margin-left: -15px;
@@ -336,7 +358,7 @@ outline: none;
   }
   
   &:last-child {
-    border-radius: 25px 10px 0 0;
+    border-radius: 25px 25px 0 0;
     margin-left: -15px;
   }
 }
@@ -520,11 +542,13 @@ outline: none;
 }
 
 .terminalLogs {
-  padding: 20px 15px 55px 15px; /* Добавляем отступ снизу для инпута */
+  padding: 20px 15px 75px 15px;
   flex: 1;
   overflow-y: auto;
   display: flex;
-  flex-direction: column-reverse; /* Новые сообщения сверху */
+  flex-direction: column-reverse;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .logLine {
@@ -548,7 +572,7 @@ outline: none;
   right: 0;
   height: 60px;
 
-background: rgba(16, 16, 16, 0.69);
+background: rgb(16, 16, 16);
   display: flex;
   align-items: center;
   padding: 0 15px;
@@ -625,6 +649,13 @@ background: rgba(16, 16, 16, 0.69);
   gap: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
+  /* Отключаем выделение текста и длительное нажатие */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 
   &:hover {
     transform: translateY(-1px);
@@ -752,6 +783,13 @@ background: rgba(16, 16, 16, 0.69);
   font-size: 14px;
   color: #fff;
   font-weight: 500;
+  /* Отключаем выделение текста и длительное нажатие */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 
   &:hover {
     transform: translateY(-1px);

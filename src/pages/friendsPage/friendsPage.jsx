@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import styles from "./FriendsPage.module.scss";
-import ToastNotification from "../components/ToastNotification";
+import styles from "./friendsPage.module.scss";
+import ToastNotification from "../../components/ToastNotification";
 
 const FriendsPage = () => {
   const [showToast, setShowToast] = useState(false);

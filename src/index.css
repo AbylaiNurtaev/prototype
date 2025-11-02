@@ -4,6 +4,16 @@
   box-sizing: border-box;
 }
 
+/* Разрешаем выделение текста в инпутах и текстовых полях */
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -22,7 +32,10 @@
 
 html {
   overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
+
 /* webapp */
 body {
   margin: 0;
@@ -31,13 +44,22 @@ body {
   background-color: #101010;
   overflow: hidden;
   width: 100%;
-
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  /* Отключаем выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Отключаем длительное нажатие */
+  -webkit-touch-callout: none;
 }
 
 #root {
   width: 100%;
   min-height: var(--tg-viewport-height, 100vh);
   background-color: #101010;
+  overscroll-behavior: none;
 }
 
 .app {
@@ -46,4 +68,5 @@ body {
   background-color: #101010;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: none;
 }

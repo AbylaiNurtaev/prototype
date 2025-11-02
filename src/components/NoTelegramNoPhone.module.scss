@@ -1,0 +1,53 @@
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10000;
+}
+
+.content {
+  text-align: center;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  color: #5264ce;
+  margin-bottom: 10px;
+  
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.title {
+  font-family: "Manrope", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  line-height: 130%;
+}
+
+.description {
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #828282;
+  margin: 0;
+  line-height: 150%;
+}
+
