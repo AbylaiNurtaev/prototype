@@ -197,11 +197,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     let i = 0;
     const addMessage = () => {
-      if (i < 3) {
+      if (i < 4) {
         setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
         i++;
         setTimeout(addMessage, 500);
-      } else if (i === 3) {
+      } else if (i === 4) {
         setTerminalLogs((prev) => [
           `[SYNC] Синхронизация узлов ${getProgressBar(0)}`,
           ...prev,
@@ -235,10 +235,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
               setTimeout(updateSyncProgress, 400);
             } else {
               setTimeout(() => {
-                setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
-                setTimeout(() => {
-                  setTerminalLogs((prev) => [initialTerminal[i + 1], ...prev]);
-                }, 500);
+                setTerminalLogs((prev) => [initialTerminal[4], ...prev]);
               }, 500);
             }
           }
@@ -311,7 +308,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
   const generateRandomCode = () => {
     const chars = "0123456789ABCDEF";
-    const length = Math.floor(Math.random() * 4) + 6; // 6-10 символов для хэша
+    const length = 8; // Фиксированная длина для стабильности
     let hash = "";
     for (let i = 0; i < length; i++) {
       hash += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -319,7 +316,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     return `0x${hash}`;
   };
 
-  const typeCode = (code) => {
+  const typeCode = (code, onComplete) => {
     if (isTyping || !code) return;
 
     // Проверяем, что code - это строка и не пустая
@@ -331,20 +328,46 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     let index = 0;
     const totalLength = codeStr.length;
+
+    const allChars = "0123456789ABCDEF";
+
     const typeChar = () => {
       if (index < totalLength) {
-        const char = codeStr[index];
-        // Проверяем, что символ существует и не undefined
-        if (char !== undefined && char !== null) {
-          setInputCode((prev) => (prev || "") + char);
-        }
-        index++;
+        const targetChar = codeStr[index];
 
-        // Замедляем печатание для эффекта
-        const delay = index === 1 ? 200 : 150; // Первый символ медленнее
-        setTimeout(typeChar, delay);
+        // Эффект подбора символа (1-2 секунды)
+        let attempts = 0;
+        const maxAttempts = Math.floor(Math.random() * 8) + 10; // 10-18 попыток ~= 0.8-1.44 сек
+
+        const tryChar = () => {
+          if (attempts < maxAttempts) {
+            // Показываем случайный символ
+            const randomChar =
+              allChars[Math.floor(Math.random() * allChars.length)];
+            setInputCode((prev) => {
+              const baseCode = codeStr.substring(0, index);
+              return baseCode + randomChar;
+            });
+            attempts++;
+            setTimeout(tryChar, 80); // Быстро перебираем символы
+          } else {
+            // Устанавливаем правильный символ
+            setInputCode((prev) => {
+              const baseCode = codeStr.substring(0, index);
+              return baseCode + targetChar;
+            });
+            index++;
+            setTimeout(typeChar, 100); // Небольшая пауза перед следующим символом
+          }
+        };
+
+        tryChar();
       } else {
         setIsTyping(false);
+        // Вызываем callback после завершения генерации
+        if (onComplete) {
+          onComplete();
+        }
       }
     };
 
@@ -434,12 +457,12 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             } else {
               // После завершения синхронизации NET начинаем подбор кода
               setTimeout(() => {
-                typeCode(randomCode);
-
-                // После подбора кода продолжаем с финальными сообщениями
-                setTimeout(() => {
-                  addFinalMessages();
-                }, 2000);
+                typeCode(randomCode, () => {
+                  // После подбора кода продолжаем с финальными сообщениями
+                  setTimeout(() => {
+                    addFinalMessages();
+                  }, 500);
+                });
               }, 500);
             }
           }
@@ -657,7 +680,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
       {showPopup && (
         <FoundPopup
-          onClose={() => setShowPopup(false)}
+          onClose={() => {
+            setShowPopup(false);
+            setInputCode("");
+            setGeneratedCode("");
+          }}
           walletAddress={generatedCode || "0x4f3a9b2Sas..."}
           collectedAmount={257}
         />

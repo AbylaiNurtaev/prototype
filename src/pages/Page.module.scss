@@ -640,8 +640,7 @@ background: rgb(16, 16, 16);
   padding: 0;
   margin: 0;
   margin-left: 2px;
-  width: auto;
-  max-width: 100%;
+  width: 120px; // Фиксированная ширина для 0x + 8 символов
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
