@@ -26,6 +26,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [startParam, setStartParam] = useState(null);
   const [rawInitData, setRawInitData] = useState(null);
 
+  const [inputCode, setInputCode] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
+  const inputRef = React.useRef(null);
+
   useEffect(() => {
     const tg = window?.Telegram?.WebApp;
 
@@ -210,8 +215,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             const currentPercent = progressSteps[progressIndex];
             setTerminalLogs((prev) => {
               const newLogs = [...prev];
-              const syncLineIndex = newLogs.findIndex((log) =>
-                log.startsWith("[SYNC] Синхронизация узлов")
+              const syncLineIndex = newLogs.findIndex(
+                (log) =>
+                  log &&
+                  typeof log === "string" &&
+                  log.startsWith("[SYNC] Синхронизация узлов")
               );
               if (syncLineIndex !== -1) {
                 newLogs[
@@ -291,11 +299,56 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   };
 
   const getProgressBar = (percent) => {
-    if (percent === undefined || percent === null) return "";
+    if (percent === undefined || percent === null || isNaN(percent)) return "";
+    const numPercent = Number(percent);
+    if (numPercent < 0) return "";
+    if (numPercent > 100) return "";
     const blocks = 8;
-    const filled = Math.floor((percent / 100) * blocks);
+    const filled = Math.floor((numPercent / 100) * blocks);
     const progressBar = "█".repeat(filled) + "░".repeat(blocks - filled);
-    return `${progressBar} ${percent}%`;
+    return `${progressBar} ${numPercent}%`;
+  };
+
+  const generateRandomCode = () => {
+    const chars = "0123456789ABCDEF";
+    const length = Math.floor(Math.random() * 4) + 6; // 6-10 символов для хэша
+    let hash = "";
+    for (let i = 0; i < length; i++) {
+      hash += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `0x${hash}`;
+  };
+
+  const typeCode = (code) => {
+    if (isTyping || !code) return;
+
+    // Проверяем, что code - это строка и не пустая
+    const codeStr = String(code || "");
+    if (!codeStr || codeStr.length === 0) return;
+
+    setIsTyping(true);
+    setInputCode("");
+
+    let index = 0;
+    const totalLength = codeStr.length;
+    const typeChar = () => {
+      if (index < totalLength) {
+        const char = codeStr[index];
+        // Проверяем, что символ существует и не undefined
+        if (char !== undefined && char !== null) {
+          setInputCode((prev) => (prev || "") + char);
+        }
+        index++;
+
+        // Замедляем печатание для эффекта
+        const delay = index === 1 ? 200 : 150; // Первый символ медленнее
+        setTimeout(typeChar, delay);
+      } else {
+        setIsTyping(false);
+      }
+    };
+
+    setTimeout(typeChar, 300);
   };
 
   const renderLiveMessage = (msg, index) => {
@@ -327,10 +380,14 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     const prepMessages = ["[SCAN] Подключение к узлам..."];
 
+    // Генерируем случайный код заранее для использования в input и в сообщении
+    const randomCode = generateRandomCode();
+    setGeneratedCode(randomCode); // Сохраняем код для передачи в попап
+
     const finalMessages = [
       "[HASH] Проверка блоков... ОК",
       "[DETECT] Найден активный адрес",
-      "[ADDR] 0xA3b7...E2",
+      `[ADDR] ${randomCode}`,
       "[BALANCE] 0.057 BTC",
       `[BOT] Отличная находка, ${displayName}.`,
       "[INFO] Поиск завершён",
@@ -356,8 +413,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             const currentPercent = progressSteps[progressIndex];
             setTerminalLogs((prev) => {
               const newLogs = [...prev];
-              const netLineIndex = newLogs.findIndex((log) =>
-                log.startsWith("[NET] Синхронизация узлов")
+              const netLineIndex = newLogs.findIndex(
+                (log) =>
+                  log &&
+                  typeof log === "string" &&
+                  log.startsWith("[NET] Синхронизация узлов")
               );
               if (netLineIndex !== -1) {
                 newLogs[
@@ -372,7 +432,15 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             if (progressIndex < progressSteps.length) {
               setTimeout(updateProgress, 400);
             } else {
-              addFinalMessages();
+              // После завершения синхронизации NET начинаем подбор кода
+              setTimeout(() => {
+                typeCode(randomCode);
+
+                // После подбора кода продолжаем с финальными сообщениями
+                setTimeout(() => {
+                  addFinalMessages();
+                }, 2000);
+              }, 500);
             }
           }
         };
@@ -541,7 +609,19 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                 }`}
               >
                 <span className={styles.prompt}>$</span>
-                <div className={styles.cursor}></div>
+                <div className={styles.inputWrapper}>
+                  {!isTyping && !inputCode && (
+                    <div className={styles.cursor}></div>
+                  )}
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className={styles.terminalInputField}
+                    value={inputCode ? String(inputCode) : ""}
+                    readOnly
+                    placeholder=""
+                  />
+                </div>
               </div>
 
               {activeTab === "token_finder" && (
@@ -578,7 +658,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       {showPopup && (
         <FoundPopup
           onClose={() => setShowPopup(false)}
-          walletAddress="0x4f3a9b2Sas..."
+          walletAddress={generatedCode || "0x4f3a9b2Sas..."}
           collectedAmount={257}
         />
       )}

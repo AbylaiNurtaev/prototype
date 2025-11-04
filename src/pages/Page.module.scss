@@ -618,6 +618,35 @@ background: rgb(16, 16, 16);
   font-family: "JetBrains Mono", "Courier New", monospace;
   font-size: 14px;
   color: #fff;
+  flex-shrink: 0;
+}
+
+.inputWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+
+.terminalInputField {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 0;
+  margin: 0;
+  margin-left: 2px;
+  width: auto;
+  max-width: 100%;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .cursor {
@@ -625,6 +654,7 @@ background: rgb(16, 16, 16);
   height: 10px;
   background-color: #fff;
   animation: blink 1s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes blink {
