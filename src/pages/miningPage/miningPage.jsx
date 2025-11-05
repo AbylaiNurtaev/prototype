@@ -198,52 +198,54 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     let i = 0;
     const addMessage = () => {
-      if (i < 4) {
+      if (i < 5) {
         setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
         i++;
         setTimeout(addMessage, 500);
-      } else if (i === 4) {
-        setTerminalLogs((prev) => [
-          `[SYNC] Синхронизация узлов ${getProgressBar(0)}`,
-          ...prev,
-        ]);
-
-        const progressSteps = [0, 10, 25, 37, 49, 56, 85, 93, 97, 100];
-        let progressIndex = 0;
-
-        const updateSyncProgress = () => {
-          if (progressIndex < progressSteps.length) {
-            const currentPercent = progressSteps[progressIndex];
-            setTerminalLogs((prev) => {
-              const newLogs = [...prev];
-              const syncLineIndex = newLogs.findIndex(
-                (log) =>
-                  log &&
-                  typeof log === "string" &&
-                  log.startsWith("[SYNC] Синхронизация узлов")
-              );
-              if (syncLineIndex !== -1) {
-                newLogs[
-                  syncLineIndex
-                ] = `[SYNC] Синхронизация узлов ${getProgressBar(
-                  currentPercent
-                )}`;
-              }
-              return newLogs;
-            });
-            progressIndex++;
-            if (progressIndex < progressSteps.length) {
-              setTimeout(updateSyncProgress, 400);
-            } else {
-              setTimeout(() => {
-                setTerminalLogs((prev) => [initialTerminal[4], ...prev]);
-              }, 500);
-            }
-          }
-        };
-
-        setTimeout(updateSyncProgress, 500);
       }
+      // Закомментировали первую синхронизацию - она будет только после нажатия "Поиск"
+      // else if (i === 4) {
+      //   setTerminalLogs((prev) => [
+      //     `[SYNC] Синхронизация узлов ${getProgressBar(0)}`,
+      //     ...prev,
+      //   ]);
+
+      //   const progressSteps = [0, 10, 25, 37, 49, 56, 85, 93, 97, 100];
+      //   let progressIndex = 0;
+
+      //   const updateSyncProgress = () => {
+      //     if (progressIndex < progressSteps.length) {
+      //       const currentPercent = progressSteps[progressIndex];
+      //       setTerminalLogs((prev) => {
+      //         const newLogs = [...prev];
+      //         const syncLineIndex = newLogs.findIndex(
+      //           (log) =>
+      //             log &&
+      //             typeof log === "string" &&
+      //             log.startsWith("[SYNC] Синхронизация узлов")
+      //         );
+      //         if (syncLineIndex !== -1) {
+      //           newLogs[
+      //             syncLineIndex
+      //           ] = `[SYNC] Синхронизация узлов ${getProgressBar(
+      //             currentPercent
+      //           )}`;
+      //         }
+      //         return newLogs;
+      //       });
+      //       progressIndex++;
+      //       if (progressIndex < progressSteps.length) {
+      //         setTimeout(updateSyncProgress, 400);
+      //       } else {
+      //         setTimeout(() => {
+      //           setTerminalLogs((prev) => [initialTerminal[4], ...prev]);
+      //         }, 500);
+      //       }
+      //     }
+      //   };
+
+      //   setTimeout(updateSyncProgress, 500);
+      // }
     };
     setTimeout(addMessage, 1000);
   }, [uiUser]);
@@ -634,11 +636,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
               onScroll={handleTerminalScroll}
             >
               {activeTab === "token_finder"
-                ? terminalLogs.map((log, index) => (
-                    <div key={index} className={styles.logLine}>
-                      {log}
-                    </div>
-                  ))
+                ? terminalLogs
+                    .filter((log) => log && log.trim() !== "")
+                    .map((log, index) => (
+                      <div key={index} className={styles.logLine}>
+                        {log}
+                      </div>
+                    ))
                 : liveFeedMessages.map((msg, index) =>
                     renderLiveMessage(msg, index)
                   )}
