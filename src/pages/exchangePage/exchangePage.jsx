@@ -5,6 +5,7 @@ const ExchangePage = ({ onInputFocus }) => {
   const RATE_BTC_TO_USDT = 0.00012; // 100 BTC = 0.012 USDT
   const [btcValue, setBtcValue] = useState("");
   const [usdtValue, setUsdtValue] = useState("");
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const btcRef = useRef(null);
   const usdtRef = useRef(null);
 
@@ -38,10 +39,12 @@ const ExchangePage = ({ onInputFocus }) => {
   }, []);
 
   const handleFocus = useCallback(() => {
+    setIsInputFocused(true);
     if (onInputFocus) onInputFocus(true);
   }, [onInputFocus]);
 
   const handleBlur = useCallback(() => {
+    setIsInputFocused(false);
     if (onInputFocus) onInputFocus(false);
   }, [onInputFocus]);
 
@@ -75,7 +78,11 @@ const ExchangePage = ({ onInputFocus }) => {
       <div className={styles.bgImage}></div>
       <div className={styles.bgBottom} />
       <div className={styles.prototypeText}>prototype</div>
-      <div className={styles.exchangeCard}>
+      <div
+        className={`${styles.exchangeCard} ${
+          isInputFocused ? styles.lifted : ""
+        }`}
+      >
         <h2 className={styles.title}>Обменяйте игровую валюту на usdt</h2>
 
         <div className={styles.inputsContainer}>

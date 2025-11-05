@@ -60,6 +60,7 @@
   overflow: visible;
   z-index: 1;
   margin-top: 250px;
+  transition: transform 0.3s ease, margin-top 0.3s ease;
 
   &::after {
     content: '';
@@ -89,6 +90,11 @@
     position: relative;
     z-index: 1;
   }
+}
+
+.lifted {
+  transform: translateY(-150px);
+  margin-top: 300px;
 }
 
 .symbolsRow {
