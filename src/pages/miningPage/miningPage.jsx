@@ -30,6 +30,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
   const inputRef = React.useRef(null);
+  const addFinalMessagesRef = React.useRef(null);
 
   useEffect(() => {
     const tg = window?.Telegram?.WebApp;
@@ -313,10 +314,10 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     for (let i = 0; i < length; i++) {
       hash += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return `0x${hash}`;
+    return `${hash}`;
   };
 
-  const typeCode = (code, onComplete) => {
+  const typeCode = (code, totalDuration, onComplete) => {
     if (isTyping || !code) return;
 
     // Проверяем, что code - это строка и не пустая
@@ -328,46 +329,57 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     let index = 0;
     const totalLength = codeStr.length;
-
     const allChars = "0123456789ABCDEF";
+
+    // Рассчитываем время на каждый символ
+    const timePerChar = totalDuration / totalLength;
 
     const typeChar = () => {
       if (index < totalLength) {
         const targetChar = codeStr[index];
 
-        // Эффект подбора символа (1-2 секунды)
+        // Рассчитываем количество попыток на основе доступного времени
+        const attemptDuration = 80; // ms на одну попытку
+        const pauseAfterChar = 100; // ms пауза после символа
+        const availableTime = timePerChar - pauseAfterChar;
+        const maxAttempts = Math.max(
+          5,
+          Math.floor(availableTime / attemptDuration)
+        );
+
         let attempts = 0;
-        const maxAttempts = Math.floor(Math.random() * 8) + 10; // 10-18 попыток ~= 0.8-1.44 сек
 
         const tryChar = () => {
           if (attempts < maxAttempts) {
             // Показываем случайный символ
             const randomChar =
               allChars[Math.floor(Math.random() * allChars.length)];
-            setInputCode((prev) => {
+            setInputCode(() => {
               const baseCode = codeStr.substring(0, index);
               return baseCode + randomChar;
             });
             attempts++;
-            setTimeout(tryChar, 80); // Быстро перебираем символы
+            setTimeout(tryChar, attemptDuration);
           } else {
             // Устанавливаем правильный символ
-            setInputCode((prev) => {
-              const baseCode = codeStr.substring(0, index);
-              return baseCode + targetChar;
-            });
             index++;
-            setTimeout(typeChar, 100); // Небольшая пауза перед следующим символом
+            setInputCode(() => {
+              return codeStr.substring(0, index);
+            });
+
+            // Проверяем, нужно ли продолжать
+            if (index < totalLength) {
+              setTimeout(typeChar, pauseAfterChar);
+            } else {
+              setIsTyping(false);
+              if (onComplete) {
+                onComplete();
+              }
+            }
           }
         };
 
         tryChar();
-      } else {
-        setIsTyping(false);
-        // Вызываем callback после завершения генерации
-        if (onComplete) {
-          onComplete();
-        }
       }
     };
 
@@ -431,6 +443,18 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         const progressSteps = [0, 13, 28, 35, 50, 69, 72, 96, 100];
         let progressIndex = 0;
 
+        // Рассчитываем общее время синхронизации
+        const progressStepDuration = 400; // ms на каждый шаг
+        const totalSyncDuration = progressSteps.length * progressStepDuration;
+
+        // Запускаем подбор кода параллельно с синхронизацией
+        // Передаём время синхронизации, чтобы подбор завершился одновременно
+        setTimeout(() => {
+          typeCode(randomCode, totalSyncDuration, () => {
+            // Подбор кода завершён
+          });
+        }, 300);
+
         const updateProgress = () => {
           if (progressIndex < progressSteps.length) {
             const currentPercent = progressSteps[progressIndex];
@@ -453,16 +477,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             });
             progressIndex++;
             if (progressIndex < progressSteps.length) {
-              setTimeout(updateProgress, 400);
+              setTimeout(updateProgress, progressStepDuration);
             } else {
-              // После завершения синхронизации NET начинаем подбор кода
+              // Синхронизация и подбор кода завершены одновременно
+              // Сразу показываем попап
               setTimeout(() => {
-                typeCode(randomCode, () => {
-                  // После подбора кода продолжаем с финальными сообщениями
-                  setTimeout(() => {
-                    addFinalMessages();
-                  }, 500);
-                });
+                setIsScanning(false);
+                setShowPopup(true);
               }, 500);
             }
           }
@@ -472,19 +493,17 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       }
     };
 
-    const addFinalMessages = () => {
+    // Сохраняем функцию для вызова после закрытия попапа
+    addFinalMessagesRef.current = () => {
       let finalIndex = 0;
       const addFinal = () => {
         if (finalIndex < finalMessages.length) {
           setTerminalLogs((prev) => [finalMessages[finalIndex], ...prev]);
           finalIndex++;
           setTimeout(addFinal, 600);
-        } else {
-          setIsScanning(false);
-          setShowPopup(true);
         }
       };
-      setTimeout(addFinal, 500);
+      setTimeout(addFinal, 300);
     };
 
     setTimeout(addPrepMessage, 300);
@@ -684,8 +703,12 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             setShowPopup(false);
             setInputCode("");
             setGeneratedCode("");
+            // Вызываем финальные сообщения после закрытия попапа
+            if (addFinalMessagesRef.current) {
+              addFinalMessagesRef.current();
+            }
           }}
-          walletAddress={generatedCode || "0x4f3a9b2Sas..."}
+          walletAddress={generatedCode || "4f3a9b2Sas..."}
           collectedAmount={257}
         />
       )}
