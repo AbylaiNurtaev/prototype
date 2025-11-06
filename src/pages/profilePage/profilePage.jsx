@@ -188,7 +188,7 @@ const ProfilePage = () => {
 
             <div className={styles.statsCard}>
               <div className={styles.iconText}>
-                <img src="/mine-icons/wallet.svg" alt="wallet" />
+                <img src="/mine-icons/wallet.png" alt="wallet" />
               </div>
               <div className={styles.titleContainer}>
                 <div className={styles.cardTitle}>193</div>
@@ -216,7 +216,7 @@ const ProfilePage = () => {
           <div className={styles.cardsScroll}>
             <div className={styles.statsCard}>
               <div className={styles.iconText}>
-                <img src="/mine-icons/wallet.svg" alt="wallet" />
+                <img src="/mine-icons/wallet.png" alt="wallet" />
               </div>
               <div className={styles.titleContainer}>
                 <div className={styles.cardTitle}>45,892</div>
