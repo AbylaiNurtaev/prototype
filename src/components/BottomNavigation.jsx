@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styles from "./BottomNavigation.module.scss";
 
-const BottomNavigation = ({ showPopup, isInputFocused }) => {
+const BottomNavigation = ({ showPopup, isInputFocused, isTaskPopupOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -74,7 +74,7 @@ const BottomNavigation = ({ showPopup, isInputFocused }) => {
     <div
       className={`${styles.bottomNavigation} ${
         showPopup ? styles.blurred : ""
-      } ${isInputFocused ? styles.hidden : ""}`}
+      } ${isInputFocused || isTaskPopupOpen ? styles.hidden : ""}`}
     >
       <div className={styles.navContent}>
         {tabs.map((tab) => {

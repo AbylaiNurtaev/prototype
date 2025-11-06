@@ -12,6 +12,7 @@ import NoTelegramNoPhone from "./components/NoTelegramNoPhone";
 function App() {
   const [showPopup, setShowPopup] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isTaskPopupOpen, setIsTaskPopupOpen] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
 
   useEffect(() => {
@@ -106,7 +107,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/mining" replace />} />
         <Route path="/leaders" element={<LeadersPage />} />
-        <Route path="/tasks" element={<TasksPage />} />
+        <Route
+          path="/tasks"
+          element={<TasksPage onPopupStateChange={setIsTaskPopupOpen} />}
+        />
         <Route
           path="/mining"
           element={
@@ -120,7 +124,11 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/friends" element={<FriendsPage />} />
       </Routes>
-      <BottomNavigation showPopup={showPopup} isInputFocused={isInputFocused} />
+      <BottomNavigation
+        showPopup={showPopup}
+        isInputFocused={isInputFocused}
+        isTaskPopupOpen={isTaskPopupOpen}
+      />
     </div>
   );
 }

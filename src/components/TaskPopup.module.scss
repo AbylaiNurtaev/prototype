@@ -1,0 +1,180 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+
+}
+
+.popup {
+  border-radius: 25px 25px 0 0;
+  padding: 60px 25px 20px;
+  width: 375px;
+  max-width: 100%;
+  height: 552px;
+  background: #1b1b1b;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.iconContainer {
+  border-radius: 25px;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+}
+
+.taskIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.taskTitle {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 130%;
+  text-align: center;
+  color: #fff;
+}
+
+.subtasksList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+}
+
+.subtaskCard {
+  border-radius: 10px;
+  padding: 10px;
+  width: 325px;
+  max-width: 100%;
+  min-height: 38px;
+  backdrop-filter: blur(64.0999984741211px);
+  background: #57575714;
+  border: 1px solid #5454546d;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.subtaskNumber {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 130%;
+  color: #fff;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.subtaskText {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 130%;
+  color: #fff;
+  flex: 1;
+}
+
+.buttonsContainer {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+
+}
+
+.subscribeButton {
+  border-radius: 1000px;
+  padding: 10px 15px;
+  width: 145px;
+  height: 44px;
+  background-image: url('/tasks/buttonbg.png');
+  background-size: cover;
+  background-position: center;
+  border: none;
+  cursor: pointer;
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 100%;
+  text-align: center;
+  color: #fff;
+}
+
+.checkButton {
+  border-radius: 1000px;
+  padding: 5px 10px;
+  width: 167px;
+  height: 44px;
+  background: transparent;
+  border: 1px solid #41414168;
+  cursor: pointer;
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 100%;
+  text-align: center;
+  color: #fff;
+}
+
