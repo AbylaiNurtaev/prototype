@@ -157,15 +157,7 @@
   height: 50vh;
   background: #000;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  overflow: hidden;
   
   .shine {
     position: absolute;
