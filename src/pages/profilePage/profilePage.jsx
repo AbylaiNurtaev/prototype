@@ -13,25 +13,11 @@ const ProfilePage = () => {
       const user = tg.initDataUnsafe?.user;
 
       if (user) {
+        console.log("User data:", user);
+
         if (user.photo_url) {
-          // Пытаемся получить фото в более высоком разрешении
-          let photoUrl = user.photo_url;
-
-          // Пробуем все возможные варианты получения большего разрешения
-          if (photoUrl.includes("/160/")) {
-            photoUrl = photoUrl.replace("/160/", "/640/");
-          } else if (photoUrl.includes("/userpic/")) {
-            // Telegram CDN - пробуем максимальный размер
-            photoUrl = photoUrl.replace(/\/\d+$/, "/640");
-          } else if (photoUrl.includes("size=small")) {
-            photoUrl = photoUrl.replace("size=small", "size=big");
-          } else if (photoUrl.includes("?")) {
-            // Добавляем параметр размера если есть query params
-            photoUrl = photoUrl + "&size=640";
-          }
-
-          console.log("Photo URL:", photoUrl);
-          setUserPhoto(photoUrl);
+          console.log("Original Photo URL:", user.photo_url);
+          setUserPhoto(user.photo_url);
         }
 
         // Получаем имя пользователя
@@ -44,7 +30,7 @@ const ProfilePage = () => {
   return (
     <div className={styles.profilePage}>
       <div className={styles.avatarSection}>
-        <img src={userPhoto} alt="User Avatar" crossOrigin="anonymous" />
+        <img src={userPhoto} alt="User Avatar" />
 
         <div className={styles.infoContainer}>
           <div className={styles.userName}>{userName}</div>
