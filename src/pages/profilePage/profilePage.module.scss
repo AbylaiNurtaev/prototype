@@ -18,6 +18,115 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  .infoContainer {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 2;
+  }
+  
+  .userName {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 130%;
+    color: #fff;
+  }
+  
+  .balanceSection {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .balanceLabel {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 130%;
+    color: #fff;
+    opacity: 0.5;
+  }
+  
+  .balanceValues {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 130%;
+    color: #fff;
+  }
+  
+  .balanceItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .balanceIcon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .balanceNumber {
+    font-family: "Manrope", sans-serif;
+    font-size: 14px;
+    color: #fff;
+    font-weight: 500;
+  }
+  
+  .balanceDivider {
+    width: 1px;
+    height: 20px;
+    background-color: #545454;
+  }
+  
+  .agentButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 5px;
+    gap: 5px;
+    border-radius: 10px;
+    padding: 10px 15px;
+    width: 210px;
+    height: 40px;
+    backdrop-filter: blur(64.0999984741211px);
+    background: #5264ce;
+    border: none;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .agentIcon {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .agentText {
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 130%;
+      color: #fff;
+    }
   }
 }
 
