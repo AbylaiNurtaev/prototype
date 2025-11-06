@@ -19,11 +19,14 @@
     object-fit: cover;
     display: block;
     image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    image-rendering: high-quality;
+    image-rendering: smooth;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   .infoContainer {
@@ -145,6 +148,107 @@
     height: 900px;
     pointer-events: none;
     z-index: 1;
+  }
+  
+  .statsContainer {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-top: 30px;
+    height: 100%;
+  }
+  
+  .statsTitle {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 130%;
+    color: #fff;
+    padding-left: 20px;
+  }
+  
+  .cardsScroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+  }
+  
+  .statsCard {
+    min-width: 152px;
+    width: 152px;
+    height: 108px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 25px;
+    padding: 15px;
+    backdrop-filter: blur(64.0999984741211px);
+    background: #57575714;
+    border: 1px solid #5454546d;
+
+  }
+  
+  .iconText {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 130%;
+    color: #fff;
+    gap: 5px;
+    
+    img, svg {
+      width: 26px;
+      height: 26px;
+    }
+  }
+  
+  .titleContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .cardTitle {
+    font-family: "Manrope", sans-serif;
+font-weight: 700;
+font-size: 16px;
+line-height: 130%;
+color: #fff;
+  }
+  
+  .cardSubtitle {
+    font-family: "Manrope", sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 130%;
+    color: #828282;
+    
+    p {
+      margin: 0;
+    }
   }
 }
 
