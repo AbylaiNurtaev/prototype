@@ -7,15 +7,16 @@
   background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  z-index: 1000;
 
+  z-index: 1000;
+  margin: 0;
+width: 100vw;
 }
 
 .popup {
   border-radius: 25px 25px 0 0;
   padding: 60px 25px 20px;
-  width: 375px;
+  width:100%;
   max-width: 100%;
   height: 552px;
   background: #1b1b1b;
@@ -107,7 +108,7 @@
 .subtaskCard {
   border-radius: 10px;
   padding: 10px;
-  width: 325px;
+  width: 100%;
   max-width: 100%;
   min-height: 38px;
   backdrop-filter: blur(64.0999984741211px);
@@ -141,13 +142,12 @@
   display: flex;
   gap: 10px;
   width: 100%;
-
 }
 
 .subscribeButton {
   border-radius: 1000px;
   padding: 10px 15px;
-  width: 145px;
+  width: 45%;
   height: 44px;
   background-image: url('/tasks/buttonbg.png');
   background-size: cover;
@@ -165,7 +165,7 @@
 .checkButton {
   border-radius: 1000px;
   padding: 5px 10px;
-  width: 167px;
+  width: 55%;
   height: 44px;
   background: transparent;
   border: 1px solid #41414168;
