@@ -1,0 +1,41 @@
+.profilePage {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+.avatarSection {
+  width: 100%;
+  height: 50vh;
+  position: relative;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.infoSection {
+  width: 100%;
+  height: 50vh;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  
+  .shine {
+    position: absolute;
+    bottom: -230px;
+    left: -100px;
+    width: 100%;
+    height: 900px;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
