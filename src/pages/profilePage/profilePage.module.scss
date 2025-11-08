@@ -15,6 +15,16 @@
   scrollbar-width: none;
 }
 
+.shine {
+  position: fixed;
+  bottom: -230px;
+  left: -100px;
+  width: 100%;
+  height: 900px;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .avatarSection {
   width: 100%;
   height: 45vh;
@@ -162,16 +172,6 @@
   position: relative;
   overflow: visible;
   padding-bottom: 100px;
-  
-  .shine {
-    position: fixed;
-    bottom: -230px;
-    left: -100px;
-    width: 100%;
-    height: 900px;
-    pointer-events: none;
-    z-index: 0;
-  }
   
   .statsContainer {
     position: relative;

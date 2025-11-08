@@ -29,6 +29,12 @@ const ProfilePage = () => {
 
   return (
     <div className={styles.profilePage}>
+      <img
+        src="/profile/shineProfile.svg"
+        alt="shine"
+        className={styles.shine}
+      />
+
       <div className={styles.avatarSection}>
         <img src={userPhoto} alt="User Avatar" />
 
@@ -86,12 +92,6 @@ const ProfilePage = () => {
       </div>
 
       <div className={styles.infoSection}>
-        <img
-          src="/profile/shineProfile.svg"
-          alt="shine"
-          className={styles.shine}
-        />
-
         <div className={styles.statsContainer}>
           <div className={styles.statsTitle}>Моя статистика</div>
 
