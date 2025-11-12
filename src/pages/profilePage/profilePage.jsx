@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./profilePage.module.scss";
 
 const ProfilePage = () => {
-  const [userPhoto, setUserPhoto] = useState(null);
+  const [userPhoto, setUserPhoto] = useState("/profile/avatar.svg");
   const [userName, setUserName] = useState("user");
 
   useEffect(() => {
@@ -15,24 +15,15 @@ const ProfilePage = () => {
       if (user) {
         console.log("User data:", user);
 
-        // Устанавливаем фото пользователя или дефолтное
         if (user.photo_url) {
           console.log("Original Photo URL:", user.photo_url);
           setUserPhoto(user.photo_url);
-        } else {
-          setUserPhoto("/profile/avatar.svg");
         }
 
         // Получаем имя пользователя
         const displayName = user.first_name || user.username || "user";
         setUserName(displayName);
-      } else {
-        // Если user нет, используем дефолтную аватарку
-        setUserPhoto("/profile/avatar.svg");
       }
-    } else {
-      // Если не в Telegram, используем дефолтную аватарку
-      setUserPhoto("/profile/avatar.svg");
     }
   }, []);
 
@@ -45,17 +36,15 @@ const ProfilePage = () => {
       />
 
       <div className={styles.avatarSection}>
-        {userPhoto && (
-          <img
-            src={userPhoto}
-            alt="User Avatar"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              console.log("Image load error, using fallback");
-              e.target.src = "/profile/avatar.svg";
-            }}
-          />
-        )}
+        <img
+          src={userPhoto}
+          alt="User Avatar"
+          crossOrigin="anonymous"
+          onError={(e) => {
+            console.log("Image load error, using fallback");
+            e.target.src = "/profile/avatar.svg";
+          }}
+        />
 
         <div className={styles.infoContainer}>
           <div className={styles.userName}>{userName}</div>
