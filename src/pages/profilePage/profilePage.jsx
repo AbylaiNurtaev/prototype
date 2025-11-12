@@ -14,27 +14,16 @@ const ProfilePage = () => {
 
       if (user) {
         console.log("User data:", user);
-        console.log("Available fields:", Object.keys(user));
 
-        // Проверяем наличие фотографии
         if (user.photo_url) {
-          console.log("Photo URL found:", user.photo_url);
-          // Используем фото напрямую без crossOrigin
+          console.log("Original Photo URL:", user.photo_url);
           setUserPhoto(user.photo_url);
-        } else {
-          console.log(
-            "No photo_url available. User may not have profile photo or privacy settings restrict access."
-          );
         }
 
         // Получаем имя пользователя
         const displayName = user.first_name || user.username || "user";
         setUserName(displayName);
-      } else {
-        console.log("No user data available from Telegram");
       }
-    } else {
-      console.log("Telegram WebApp not available");
     }
   }, []);
 
@@ -47,16 +36,7 @@ const ProfilePage = () => {
       />
 
       <div className={styles.avatarSection}>
-        <img
-          src={userPhoto}
-          alt="User Avatar"
-          onError={(e) => {
-            console.log("Image load error, using fallback");
-            console.log("Failed URL:", e.target.src);
-            e.target.src = "/profile/avatar.svg";
-          }}
-          referrerPolicy="no-referrer"
-        />
+        <img src={userPhoto} alt="User Avatar" />
 
         <div className={styles.infoContainer}>
           <div className={styles.userName}>{userName}</div>
