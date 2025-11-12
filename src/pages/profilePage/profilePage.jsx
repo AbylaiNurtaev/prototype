@@ -26,6 +26,9 @@ const ProfilePage = () => {
         // Получаем имя пользователя
         const displayName = user.first_name || user.username || "user";
         setUserName(displayName);
+      } else {
+        // Если user нет, используем дефолтную аватарку
+        setUserPhoto("/profile/avatar.svg");
       }
     } else {
       // Если не в Telegram, используем дефолтную аватарку
@@ -42,7 +45,17 @@ const ProfilePage = () => {
       />
 
       <div className={styles.avatarSection}>
-        {userPhoto && <img src={userPhoto} alt="User Avatar" />}
+        {userPhoto && (
+          <img
+            src={userPhoto}
+            alt="User Avatar"
+            crossOrigin="anonymous"
+            onError={(e) => {
+              console.log("Image load error, using fallback");
+              e.target.src = "/profile/avatar.svg";
+            }}
+          />
+        )}
 
         <div className={styles.infoContainer}>
           <div className={styles.userName}>{userName}</div>
