@@ -48,14 +48,28 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
+  // Затемнение сверху
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  // Затемнение снизу
   &::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 40%;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.187) 0%, rgba(0, 0, 0, 0.9) 100%);
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
     pointer-events: none;
     z-index: 2;
   }
