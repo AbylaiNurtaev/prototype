@@ -1,0 +1,366 @@
+.leadersPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  position: relative;
+  background: #000;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.shine {
+  position: fixed;
+  bottom: -250px;
+  left: -100px;
+  width: 100%;
+  height: 900px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pageContent {
+  width: 90%;
+  margin: 0 auto;
+  padding-top: 20px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 100px;
+}
+
+.banner {
+  position: relative;
+  width: 100%;
+  height: 189px;
+  border-radius: 25px;
+  padding: 15px;
+  margin: 0 auto;
+  overflow: hidden;
+  margin-top: 30px;
+}
+
+.bannerBg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 25px;
+  z-index: 0;
+}
+
+.leadersContainer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 100%;
+  gap: 10px;
+}
+
+.leaderCard {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.avatarContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 5px;
+}
+
+.avatarWrapper {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarWrapper.firstPlace {
+  width: 103px;
+  height: 103px;
+  border-color: #5264CE; // Фиолетовый
+}
+
+.avatarWrapper.secondPlace {
+  width: 77px;
+  height: 77px;
+  border-color: #C1C1C1; // Серебряный
+}
+
+.avatarWrapper.thirdPlace {
+  width: 77px;
+  height: 77px;
+  border-color: #675100; // Бронзовый
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.positionBadge {
+  position: absolute;
+  bottom: 0px;
+  left: 90%;
+  transform: translateX(-50%);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid #000;
+  z-index: 2;
+  font-family: "Manrope", sans-serif;
+font-weight: 700;
+font-size: 16px;
+line-height: 130%;
+color: #fff;
+}
+
+.positionBadge.firstPlaceBadge {
+  background-color:#5264CE;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  bottom: 5%;
+}
+
+.positionBadge.secondPlaceBadge {
+  background-color: #C1C1C1;
+  color: #000;
+}
+
+.positionBadge.thirdPlaceBadge {
+  background-color: #675100;
+  color: #fff;
+}
+
+.leadersContainer .leaderCard:nth-child(1) .avatarContainer,
+.leadersContainer .leaderCard:nth-child(3) .avatarContainer {
+  margin-top: 18px;
+}
+
+.leadersTitle {
+  margin-top: 35px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 130%;
+  color: #fff;
+}
+
+.controlsRow {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.controlButtons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controlButton {
+  border: none;
+  border-radius: 1000px;
+  padding: 5px 10px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 130%;
+  color: #fff;
+  backdrop-filter: blur(64.0999984741211px);
+}
+
+.monthButton {
+  width: 66px;
+}
+
+.allTimeButton {
+  width: 92px;
+}
+
+.controlButtonActive {
+  background: #5264ce;
+  color: #fff;
+}
+
+.controlButtonInactive {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.controlsLabel {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 130%;
+  color: #fff;
+}
+
+.leadersList {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.listTitle {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 130%;
+  color: #fff;
+
+  span {
+    font-weight: 600;
+    opacity: 0.6;
+  }
+}
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  backdrop-filter: blur(64.0999984741211px);
+  background: #57575714;
+  border: 1px solid #5454546d;
+}
+
+.rank {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  width: 24px;
+}
+
+.listNameContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.listAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.listName {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+}
+
+.listBtcContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.listBtcText {
+  font-family: "Manrope", sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: #828282;
+  margin: 0;
+}
+
+.leaderInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.leaderName {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 130%;
+  text-align: center;
+  color: #fff;
+}
+
+.leaderScore {
+  display: flex;
+
+  gap: 4px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 130%;
+  color: #fff;
+}
+
+.bitcoinSymbol {
+  color: #5264CE;
+  font-size: 16px;
+}
+
+.prototypeText {
+  font-family: "Pixelify Sans", sans-serif;
+  font-weight: 500;
+  font-size: 25px;
+  line-height: 130%;
+  text-align: center;
+  color: #fff;
+  margin-top: 30px;
+  @media screen and (min-width: 400px) {
+    margin-top: 40px;
+  }
+}
+
