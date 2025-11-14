@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./leadersPage.module.scss";
+import LeaderPopup from "../../components/LeaderPopup";
 
 const LeadersPage = () => {
   // Данные лидеров (можно будет заменить на данные из API)
@@ -620,130 +621,7 @@ const LeadersPage = () => {
         </div>
       </div>
       {selectedLeader && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div
-            className={styles.modalContent}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className={styles.modalClose}
-              onClick={closeModal}
-              aria-label="Закрыть"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 4L4 12"
-                  stroke="#fff"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M4 4L12 12"
-                  stroke="#fff"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-
-            <div className={styles.modalHeader}>
-              <img src="/profile/avatar.svg" alt={selectedLeader.userName} />
-              <div className={styles.modalGradientTop}></div>
-              <div className={styles.modalGradientBottom}></div>
-              <div className={styles.modalHeaderInfo}>
-                <div className={styles.modalName}>
-                  {selectedLeader.userName}
-                </div>
-                <div className={styles.modalBalances}>
-                  <span className={styles.modalBalanceLabel}>Балансы:</span>
-                  <div className={styles.modalBalanceItem}>
-                    <img
-                      src="/mine-icons/bitcoin.svg"
-                      alt="btc"
-                      className={styles.modalBalanceIcon}
-                    />
-                    <span className={styles.modalBalanceValue}>
-                      {selectedLeader.balanceBtc}
-                    </span>
-                  </div>
-                  <div className={styles.modalBalanceDivider}></div>
-                  <div className={styles.modalBalanceItem}>
-                    <img
-                      src="/mine-icons/energy.svg"
-                      alt="energy"
-                      className={styles.modalBalanceIcon}
-                    />
-                    <span className={styles.modalBalanceValue}>
-                      {selectedLeader.balanceEnergy}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className={`${styles.modalAgentButton} ${
-                    selectedLeader.aiAgentActive
-                      ? styles.modalAgentButtonActive
-                      : styles.modalAgentButtonInactive
-                  }`}
-                >
-                  <img
-                    src="/mine-icons/ai-agent.svg"
-                    alt="ai-agent"
-                    className={styles.modalAgentIcon}
-                  />
-                  <span className={styles.modalAgentText}>
-                    AI - agent{" "}
-                    {selectedLeader.aiAgentActive ? "активен" : "не активен"}
-                  </span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g opacity="0.5">
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M8.00015 1.33337C4.31828 1.33337 1.3335 4.31812 1.3335 8.00003C1.3335 11.6819 4.31828 14.6667 8.00015 14.6667C11.6821 14.6667 14.6668 11.6819 14.6668 8.00003C14.6668 4.31812 11.6821 1.33337 8.00015 1.33337ZM8.83496 5.33337C8.83496 5.81675 8.48303 6.16672 8.00693 6.16672C7.51159 6.16672 7.16828 5.81672 7.16828 5.32412C7.16828 4.85069 7.52087 4.50006 8.00693 4.50006C8.48303 4.50006 8.83496 4.85069 8.83496 5.33337ZM7.33496 7.33337H8.66828V11.3334H7.33496V7.33337Z"
-                        fill="white"
-                      />
-                    </g>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.modalPlace}>
-                Место в списке: {selectedLeader.place}
-              </div>
-
-              <div className={styles.modalStatsTitle}>Статистика игрока</div>
-              <div className={styles.modalStatsGrid}>
-                {selectedLeader.stats.map((stat, index) => (
-                  <div key={index} className={styles.modalStatCard}>
-                    <div className={styles.modalStatIcon}>
-                      <img src={stat.icon} alt="" />
-                    </div>
-                    <div className={styles.modalStatContent}>
-                      <div className={styles.modalStatValue}>{stat.value}</div>
-                      <div className={styles.modalStatLabel}>{stat.label}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <LeaderPopup leader={selectedLeader} onClose={closeModal} />
       )}
     </div>
   );

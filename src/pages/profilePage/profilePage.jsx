@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./profilePage.module.scss";
 
 const ProfilePage = () => {
-  const [userPhoto, setUserPhoto] = useState("/profile/avatar.svg");
+  const [userPhoto, setUserPhoto] = useState(null);
   const [userName, setUserName] = useState("user");
 
   useEffect(() => {
@@ -36,7 +36,7 @@ const ProfilePage = () => {
       />
 
       <div className={styles.avatarSection}>
-        <img src={userPhoto} alt="User Avatar" />
+        {userPhoto && <img src={userPhoto} alt="User Avatar" />}
 
         <div className={styles.infoContainer}>
           <div className={styles.userName}>{userName}</div>
