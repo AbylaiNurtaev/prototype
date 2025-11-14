@@ -9,14 +9,26 @@
   color: white;
   padding-bottom: 80px; /* Отступ для навигационной панели */
   overscroll-behavior: none;
+  position: relative;
+}
+
+.shine {
+  position: fixed;
+  bottom: -400px;
+  left: -180px;
+  width: 700px;
+  height: 1200px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .pageContent {
-
   max-width: 90%;
   margin: 0 auto;
   height: calc(100vh - 90px);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 
   h1 {
     font-size: 24px;

@@ -513,6 +513,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
   return (
     <div className={styles.page}>
+      <img
+        src="/profile/shineProfile.svg"
+        alt="shine"
+        className={styles.shine}
+      />
       <div className={styles.pageContent}>
         <div className={styles.prototypeText}>prototype</div>
 
