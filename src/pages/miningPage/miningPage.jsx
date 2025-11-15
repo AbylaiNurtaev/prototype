@@ -54,6 +54,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       console.log("⚠️ Терминал уже инициализирован, пропускаем");
       return;
     }
+
+    // Ждем пока загрузится tgUser из Telegram
+    if (!tgUser) {
+      console.log("⏳ Ждем загрузки данных Telegram...");
+      return;
+    }
+
     isTerminalInitialized.current = true;
 
     const fetchInitialData = async () => {
@@ -86,11 +93,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         console.log("📜 Тип данных:", typeof historyData);
         console.log("📜 Это массив?:", Array.isArray(historyData));
 
-        // Формируем начальные приветственные сообщения
-        const username = uiUser?.username || "username";
-        const displayName = uiUser?.displayName || "Пользователь";
+        // Формируем начальные приветственные сообщения с реальным username из Telegram
+        const username = tgUser.username || `user${tgUser.id}` || "username";
+        const displayName = tgUser.first_name || tgUser.username || tgUser.last_name || "Пользователь";
         const btcBalance = balanceData?.btc || balanceData?.bitcoin || 0;
         const energyBalance = balanceData?.energy || 0;
+
+        console.log("👤 Используем Telegram username:", username);
 
         const initialMessages = [
           "[BOOT] Подключение к BTC Prototype...",
@@ -138,7 +147,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     };
 
     fetchInitialData();
-  }, []);
+  }, [tgUser]);
 
   // Автоматическое обновление Live Feed каждые 10 секунд
   useEffect(() => {
