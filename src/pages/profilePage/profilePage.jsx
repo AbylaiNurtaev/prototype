@@ -1,9 +1,36 @@
 import React, { useState, useEffect } from "react";
 import styles from "./profilePage.module.scss";
+import { getBalance } from "../../services/api";
 
 const ProfilePage = () => {
   const [userPhoto, setUserPhoto] = useState(null);
   const [userName, setUserName] = useState("user");
+  const [balance, setBalance] = useState({
+    btc: 0,
+    energy: 0,
+  });
+
+  // Загрузка баланса
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const balanceData = await getBalance();
+        console.log("💰 Баланс загружен:", balanceData);
+        
+        // Обновляем баланс из ответа API
+        if (balanceData) {
+          setBalance({
+            btc: balanceData.btc || balanceData.bitcoin || 0,
+            energy: balanceData.energy || 0,
+          });
+        }
+      } catch (error) {
+        console.error("❌ Ошибка загрузки баланса:", error);
+      }
+    };
+
+    fetchBalance();
+  }, []);
 
   useEffect(() => {
     const tg = window?.Telegram?.WebApp;
@@ -50,7 +77,7 @@ const ProfilePage = () => {
                   alt="bitcoin"
                   className={styles.balanceIcon}
                 />
-                <span className={styles.balanceNumber}>3280</span>
+                <span className={styles.balanceNumber}>{balance.btc}</span>
               </div>
               <div className={styles.balanceDivider}></div>
               <div className={styles.balanceItem}>
@@ -59,7 +86,7 @@ const ProfilePage = () => {
                   alt="energy"
                   className={styles.balanceIcon}
                 />
-                <span className={styles.balanceNumber}>12</span>
+                <span className={styles.balanceNumber}>{balance.energy}</span>
               </div>
             </div>
           </div>

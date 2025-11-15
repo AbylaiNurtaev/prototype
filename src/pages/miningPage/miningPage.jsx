@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "../Page.module.scss";
 import FoundPopup from "../../components/FoundPopup";
+import NotFoundPopup from "../../components/NotFoundPopup";
+import {
+  getBalance,
+  getLiveFeed,
+  getConsoleHistory,
+  consoleSearch,
+} from "../../services/api";
 
 const MiningPage = ({ showPopup, setShowPopup }) => {
   const [activeTab, setActiveTab] = useState("token_finder");
   const [isScanning, setIsScanning] = useState(false);
+  const [showNotFoundPopup, setShowNotFoundPopup] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const SLIDE_GAP = 20;
   const sliderContainerRef = React.useRef(null);
@@ -20,7 +28,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const scrollTimeoutRef = React.useRef(null);
 
   const [liveFeedMessages, setLiveFeedMessages] = useState([]);
-  const isInitialized = React.useRef(false);
+  const liveFeedQueueRef = React.useRef([]); // Очередь новых сообщений из API
+  const isTerminalInitialized = React.useRef(false); // Флаг инициализации терминала
 
   const [tgUser, setTgUser] = useState(null);
   const [startParam, setStartParam] = useState(null);
@@ -31,6 +40,164 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [generatedCode, setGeneratedCode] = useState("");
   const inputRef = React.useRef(null);
   const addFinalMessagesRef = React.useRef(null);
+
+  // Баланс пользователя
+  const [balance, setBalance] = useState({
+    btc: 0,
+    energy: 0,
+  });
+
+  // Загрузка начальных данных: баланс, live feed, история консоли
+  useEffect(() => {
+    // Защита от повторного вызова (React Strict Mode)
+    if (isTerminalInitialized.current) {
+      console.log("⚠️ Терминал уже инициализирован, пропускаем");
+      return;
+    }
+    isTerminalInitialized.current = true;
+
+    const fetchInitialData = async () => {
+      try {
+        // Загружаем баланс
+        const balanceData = await getBalance();
+        console.log("💰 Баланс загружен:", balanceData);
+
+        if (balanceData) {
+          setBalance({
+            btc: balanceData.btc || balanceData.bitcoin || 0,
+            energy: balanceData.energy || 0,
+          });
+        }
+
+        // Загружаем Live Feed
+        const liveFeedData = await getLiveFeed();
+        console.log("📡 Live Feed загружен, получено записей:", liveFeedData?.length || 0);
+
+        // Добавляем начальные данные в очередь для постепенного появления
+        if (liveFeedData && Array.isArray(liveFeedData)) {
+          liveFeedQueueRef.current = [...liveFeedData];
+          console.log("📥 Начальная очередь:", liveFeedQueueRef.current.length);
+        }
+
+        // Загружаем историю консоли
+        const historyData = await getConsoleHistory();
+        console.log("📜 История консоли загружена");
+        console.log("📜 Данные истории:", historyData);
+        console.log("📜 Тип данных:", typeof historyData);
+        console.log("📜 Это массив?:", Array.isArray(historyData));
+
+        // Формируем начальные приветственные сообщения
+        const username = uiUser?.username || "username";
+        const displayName = uiUser?.displayName || "Пользователь";
+        const btcBalance = balanceData?.btc || balanceData?.bitcoin || 0;
+        const energyBalance = balanceData?.energy || 0;
+
+        const initialMessages = [
+          "[BOOT] Подключение к BTC Prototype...",
+          `[AUTH] Пользователь: @${username} — проверка доступа...`,
+          "[OK] Соединение установлено",
+          `[DATA] Игровой баланс: ${btcBalance}₿ • Энергия: ${energyBalance}`,
+          "[INFO] Готово к поиску. Нажми «Поиск», чтобы начать скан.",
+        ];
+
+        // Сохраняем историю из API если есть
+        let apiHistory = [];
+        if (historyData && Array.isArray(historyData)) {
+          apiHistory = historyData.map((item) => {
+            if (typeof item === 'string') {
+              return item;
+            }
+            if (typeof item === 'object' && item !== null) {
+              return `[${item.type || 'INFO'}] ${item.message || JSON.stringify(item)}`;
+            }
+            return String(item);
+          });
+        }
+
+        // Анимированное добавление начальных сообщений
+        // Сначала показываем историю из API если есть
+        if (apiHistory.length > 0) {
+          setTerminalLogs(apiHistory);
+        }
+
+        // Потом добавляем начальные сообщения по одному
+        let messageIndex = 0;
+        const addInitialMessage = () => {
+          if (messageIndex < initialMessages.length) {
+            setTerminalLogs((prev) => [initialMessages[messageIndex], ...prev]);
+            messageIndex++;
+            setTimeout(addInitialMessage, 500);
+          }
+        };
+
+        // Запускаем анимацию через 1 секунду
+        setTimeout(addInitialMessage, 1000);
+      } catch (error) {
+        console.error("❌ Ошибка загрузки данных:", error);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Автоматическое обновление Live Feed каждые 10 секунд
+  useEffect(() => {
+    const updateLiveFeed = async () => {
+      try {
+        const liveFeedData = await getLiveFeed();
+        console.log("🔄 Получено записей из API:", liveFeedData?.length || 0);
+
+        // Добавляем новые записи в очередь
+        if (liveFeedData && Array.isArray(liveFeedData)) {
+          liveFeedQueueRef.current = [
+            ...liveFeedQueueRef.current,
+            ...liveFeedData,
+          ];
+          console.log("📥 В очереди записей:", liveFeedQueueRef.current.length);
+        }
+      } catch (error) {
+        console.error("❌ Ошибка обновления Live Feed:", error);
+      }
+    };
+
+    // Обновляем каждые 10 секунд
+    const intervalId = setInterval(updateLiveFeed, 10000);
+
+    // Очищаем интервал при размонтировании
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Добавление записей из очереди по одной каждые 1-2 секунды
+  useEffect(() => {
+    const addMessageFromQueue = () => {
+      if (liveFeedQueueRef.current.length > 0) {
+        const nextMessage = liveFeedQueueRef.current.shift();
+        
+        setLiveFeedMessages((prev) => {
+          const newMessages = [nextMessage, ...prev];
+          // Ограничиваем до 50 записей для оптимизации
+          return newMessages.slice(0, 50);
+        });
+        
+        console.log("✅ Добавлено сообщение в Live Feed");
+      }
+    };
+
+    // Добавляем по одной записи каждые 1-2 секунды
+    const getRandomDelay = () => Math.random() * 1000 + 1000; // 1-2 секунды
+    
+    let timeoutId;
+    const scheduleNext = () => {
+      timeoutId = setTimeout(() => {
+        addMessageFromQueue();
+        scheduleNext();
+      }, getRandomDelay());
+    };
+    
+    scheduleNext();
+
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   useEffect(() => {
     const tg = window?.Telegram?.WebApp;
@@ -104,56 +271,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     };
   }, [tgUser]);
 
-  const liveFeedTemplates = [
-    "user#{number}: {amount}₿ | 0x{hash}",
-    "@{username}: {amount}₿ | 0x{hash}",
-    "miner#{number}: {amount}₿ | 0x{hash}",
-    "@{username}: {amount}₿ | 0x{hash}",
-    "user#{number}: {amount}₿ | 0x{hash}",
-  ];
-
-  const usernames = [
-    "agent47",
-    "trinity",
-    "morpheus",
-    "oracle",
-    "neo",
-    "cypher",
-    "switch",
-    "apoc",
-    "mouse",
-    "tank",
-    "dozer",
-    "ghost",
-    "phantom",
-    "shadow",
-    "blade",
-    "storm",
-    "thunder",
-    "lightning",
-    "fire",
-    "ice",
-  ];
-
-  const generateRandomMessage = () => {
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
-    const template =
-      liveFeedTemplates[Math.floor(Math.random() * liveFeedTemplates.length)];
-    const amount = Math.floor(Math.random() * 10000) + 100;
-    const number = Math.floor(Math.random() * 9999) + 1;
-    const username = usernames[Math.floor(Math.random() * usernames.length)];
-    const hash = Math.random().toString(16).substring(2, 6).toUpperCase();
-    let message = template
-      .replace("{number}", number)
-      .replace("{amount}", amount)
-      .replace("{username}", username)
-      .replace("{hash}", hash);
-    return `[${timeStr}] > ${message}`;
-  };
+  // Генерация случайных сообщений удалена - используем только данные из API
 
   const scrollToTop = () => {
     if (terminalRef.current && !isUserScrolling)
@@ -169,104 +287,14 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     );
   };
 
-  useEffect(() => {
-    if (isInitialized.current || !uiUser) return;
-    isInitialized.current = true;
-
-    const initialLive = [
-      "[19:26] > user#1029: 3214₿ | 0xB2..4D",
-      "[19:26] > @agent47: 589₿ | 0x6E..7F",
-      "[19:26] > user#2288: 2301₿ | 0xD4..9E",
-      "[19:27] > @trinity: 4932₿ | 0x77..FA",
-      "[19:27] > user#9931: 247₿ | 0xCA..51",
-      "[19:27] > @morpheus: 1024₿ | 0xF0..AA",
-      "[19:28] > user#3142: 712₿ | 0x82..3C",
-      "[19:28] > @oracle: 8392₿ | 0xDE..F5",
-      "[19:28] > user#1190: 351₿ | 0x1A..B7",
-    ];
-    setLiveFeedMessages(initialLive);
-
-    const username = uiUser.username || "username";
-    const displayName = uiUser.displayName || "Пользователь";
-    const initialTerminal = [
-      "[BOOT] Подключение к BTC Prototype...",
-      `[AUTH] Пользователь: @${username} — проверка доступа...`,
-      "[OK] Соединение установлено",
-      "[DATA] Игровой баланс: 1100₿ • Энергия: 12",
-      "[INFO] Готово к поиску. Нажми «Поиск», чтобы начать скан.",
-    ];
-
-    let i = 0;
-    const addMessage = () => {
-      if (i < 5) {
-        setTerminalLogs((prev) => [initialTerminal[i], ...prev]);
-        i++;
-        setTimeout(addMessage, 500);
-      }
-      // Закомментировали первую синхронизацию - она будет только после нажатия "Поиск"
-      // else if (i === 4) {
-      //   setTerminalLogs((prev) => [
-      //     `[SYNC] Синхронизация узлов ${getProgressBar(0)}`,
-      //     ...prev,
-      //   ]);
-
-      //   const progressSteps = [0, 10, 25, 37, 49, 56, 85, 93, 97, 100];
-      //   let progressIndex = 0;
-
-      //   const updateSyncProgress = () => {
-      //     if (progressIndex < progressSteps.length) {
-      //       const currentPercent = progressSteps[progressIndex];
-      //       setTerminalLogs((prev) => {
-      //         const newLogs = [...prev];
-      //         const syncLineIndex = newLogs.findIndex(
-      //           (log) =>
-      //             log &&
-      //             typeof log === "string" &&
-      //             log.startsWith("[SYNC] Синхронизация узлов")
-      //         );
-      //         if (syncLineIndex !== -1) {
-      //           newLogs[
-      //             syncLineIndex
-      //           ] = `[SYNC] Синхронизация узлов ${getProgressBar(
-      //             currentPercent
-      //           )}`;
-      //         }
-      //         return newLogs;
-      //       });
-      //       progressIndex++;
-      //       if (progressIndex < progressSteps.length) {
-      //         setTimeout(updateSyncProgress, 400);
-      //       } else {
-      //         setTimeout(() => {
-      //           setTerminalLogs((prev) => [initialTerminal[4], ...prev]);
-      //         }, 500);
-      //       }
-      //     }
-      //   };
-
-      //   setTimeout(updateSyncProgress, 500);
-      // }
-    };
-    setTimeout(addMessage, 1000);
-  }, [uiUser]);
+  // Этот useEffect больше не нужен - данные загружаются из API
+  // Live Feed и Console History приходят из /api/console/live-feed и /api/console/history
 
   useEffect(() => {
     scrollToTop();
   }, [terminalLogs, liveFeedMessages]);
 
-  useEffect(() => {
-    if (activeTab !== "live_feed") return;
-    const tick = () => {
-      setLiveFeedMessages((prev) => {
-        const next = [generateRandomMessage(), ...prev];
-        return next.length > 20 ? next.slice(0, 20) : next;
-      });
-      const delay = Math.random() * 2000 + 1000;
-      timer = setTimeout(tick, delay);
-    };
-    let timer = setTimeout(tick, Math.random() * 2000 + 1000);
-    return () => clearTimeout(timer);
-  }, [activeTab]);
+  // useEffect для генерации случайных сообщений удален - используем только данные из API
 
   useEffect(() => {
     const updateWidth = () => {
@@ -389,25 +417,72 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   };
 
   const renderLiveMessage = (msg, index) => {
-    const match = msg.match(/^(.*?)(\d+)₿(.*)$/);
-    if (!match) {
+    // Если msg - объект из API
+    if (typeof msg === 'object' && msg !== null) {
+      const username = msg.user_data?.username || msg.user_data?.name || `user#${msg.user_id}`;
+      const amount = msg.amount || 0;
+      const address = msg.adress || msg.address || '';
+      
+      // Форматируем адрес: первые 4 и последние 2 символа
+      const shortAddress = address.length > 6 
+        ? `${address.substring(0, 4)}..${address.substring(address.length - 2)}`
+        : address;
+      
+      // Форматируем время из created_at
+      let timeStr = '[--:--]';
+      if (msg.created_at) {
+        try {
+          const date = new Date(msg.created_at);
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          timeStr = `[${hours}:${minutes}]`;
+        } catch (e) {
+          console.error('Ошибка парсинга даты:', e);
+        }
+      }
+      
+      // Формат: [19:26] > @username: 298₿ | 0x01..4z
+      const before = `${timeStr} > @${username}: `;
+      const after = ` | ${shortAddress}`;
+      
       return (
         <div key={index} className={styles.logLine}>
-          {msg}
+          {before}
+          <span className={styles.amountHighlight}>{amount}₿</span>
+          {after}
         </div>
       );
     }
-    const [, before, amount, after] = match;
+    
+    // Если msg - строка (для обратной совместимости)
+    if (typeof msg === 'string') {
+      const match = msg.match(/^(.*?)(\d+)₿(.*)$/);
+      if (!match) {
+        return (
+          <div key={index} className={styles.logLine}>
+            {msg}
+          </div>
+        );
+      }
+      const [, before, amount, after] = match;
+      return (
+        <div key={index} className={styles.logLine}>
+          {before}
+          <span className={styles.amountHighlight}>{amount}₿</span>
+          {after}
+        </div>
+      );
+    }
+    
+    // Fallback
     return (
       <div key={index} className={styles.logLine}>
-        {before}
-        <span className={styles.amountHighlight}>{amount}₿</span>
-        {after}
+        {String(msg)}
       </div>
     );
   };
 
-  const startScan = () => {
+  const startScan = async () => {
     if (isScanning) return;
     setIsScanning(true);
     setShowPopup(false);
@@ -415,100 +490,133 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     const username = uiUser.username || "username";
     const displayName = uiUser.displayName || "Пользователь";
 
-    const prepMessages = ["[SCAN] Подключение к узлам..."];
-
     // Генерируем случайный код заранее для использования в input и в сообщении
     const randomCode = generateRandomCode();
     setGeneratedCode(randomCode); // Сохраняем код для передачи в попап
 
-    const finalMessages = [
-      "[HASH] Проверка блоков... ОК",
-      "[DETECT] Найден активный адрес",
-      `[ADDR] ${randomCode}`,
-      "[BALANCE] 0.057 BTC",
-      `[BOT] Отличная находка, ${displayName}.`,
-      "[INFO] Поиск завершён",
-    ];
+    // Сначала вызываем API для проверки
+    try {
+      const searchData = await consoleSearch();
+      console.log("✅ Данные поиска получены:", searchData);
 
-    let messageIndex = 0;
-    const addPrepMessage = () => {
-      if (messageIndex < prepMessages.length) {
-        setTerminalLogs((prev) => [prepMessages[messageIndex], ...prev]);
-        messageIndex++;
-        setTimeout(addPrepMessage, 500);
-      } else {
-        setTerminalLogs((prev) => [
-          `[NET] Синхронизация узлов ${getProgressBar(0)}`,
-          ...prev,
-        ]);
+      // Если API вернул успешный результат - запускаем анимацию терминала
+      const prepMessages = ["[SCAN] Подключение к узлам..."];
 
-        const progressSteps = [0, 13, 28, 35, 50, 69, 72, 96, 100];
-        let progressIndex = 0;
+      let messageIndex = 0;
+      const addPrepMessage = () => {
+        if (messageIndex < prepMessages.length) {
+          setTerminalLogs((prev) => [prepMessages[messageIndex], ...prev]);
+          messageIndex++;
+          setTimeout(addPrepMessage, 500);
+        } else {
+          setTerminalLogs((prev) => [
+            `[NET] Синхронизация узлов ${getProgressBar(0)}`,
+            ...prev,
+          ]);
 
-        // Рассчитываем общее время синхронизации
-        const progressStepDuration = 400; // ms на каждый шаг
-        const totalSyncDuration = progressSteps.length * progressStepDuration;
+          const progressSteps = [0, 13, 28, 35, 50, 69, 72, 96, 100];
+          let progressIndex = 0;
 
-        // Запускаем подбор кода параллельно с синхронизацией
-        // Передаём время синхронизации, чтобы подбор завершился одновременно
-        setTimeout(() => {
-          typeCode(randomCode, totalSyncDuration, () => {
-            // Подбор кода завершён
-          });
-        }, 300);
+          // Рассчитываем общее время синхронизации
+          const progressStepDuration = 400; // ms на каждый шаг
+          const totalSyncDuration = progressSteps.length * progressStepDuration;
 
-        const updateProgress = () => {
-          if (progressIndex < progressSteps.length) {
-            const currentPercent = progressSteps[progressIndex];
-            setTerminalLogs((prev) => {
-              const newLogs = [...prev];
-              const netLineIndex = newLogs.findIndex(
-                (log) =>
-                  log &&
-                  typeof log === "string" &&
-                  log.startsWith("[NET] Синхронизация узлов")
-              );
-              if (netLineIndex !== -1) {
-                newLogs[
-                  netLineIndex
-                ] = `[NET] Синхронизация узлов ${getProgressBar(
-                  currentPercent
-                )}`;
-              }
-              return newLogs;
+          // Запускаем подбор кода параллельно с синхронизацией
+          setTimeout(() => {
+            typeCode(randomCode, totalSyncDuration, () => {
+              // Подбор кода завершён
             });
-            progressIndex++;
-            if (progressIndex < progressSteps.length) {
-              setTimeout(updateProgress, progressStepDuration);
-            } else {
-              // Синхронизация и подбор кода завершены одновременно
-              // Сразу показываем попап
-              setTimeout(() => {
-                setIsScanning(false);
-                setShowPopup(true);
-              }, 500);
-            }
+          }, 300);
+
+          // Обновляем баланс из ответа API
+          if (searchData && searchData.balance) {
+            setBalance({
+              btc: parseFloat(searchData.balance) || 0,
+              energy: balance.energy, // Энергия остается прежней
+            });
           }
-        };
 
-        setTimeout(updateProgress, 300);
-      }
-    };
+          // Создаём финальные сообщения с данными из API
+          const collectedAmount = searchData?.collected_amount || searchData?.amount || "0";
+          const finalMessages = [
+            "[HASH] Проверка блоков... ОК",
+            "[DETECT] Найден активный адрес",
+            `[ADDR] ${randomCode}`,
+            `[BALANCE] ${collectedAmount} BTC`,
+            `[BOT] Отличная находка, ${displayName}.`,
+            "[INFO] Поиск завершён",
+          ];
 
-    // Сохраняем функцию для вызова после закрытия попапа
-    addFinalMessagesRef.current = () => {
-      let finalIndex = 0;
-      const addFinal = () => {
-        if (finalIndex < finalMessages.length) {
-          setTerminalLogs((prev) => [finalMessages[finalIndex], ...prev]);
-          finalIndex++;
-          setTimeout(addFinal, 600);
+          // Сохраняем функцию для вызова после закрытия попапа
+          addFinalMessagesRef.current = () => {
+            let finalIndex = 0;
+            const addFinal = () => {
+              if (finalIndex < finalMessages.length) {
+                setTerminalLogs((prev) => [
+                  finalMessages[finalIndex],
+                  ...prev,
+                ]);
+                finalIndex++;
+                setTimeout(addFinal, 600);
+              }
+            };
+            setTimeout(addFinal, 300);
+          };
+
+          const updateProgress = () => {
+            if (progressIndex < progressSteps.length) {
+              const currentPercent = progressSteps[progressIndex];
+              setTerminalLogs((prev) => {
+                const newLogs = [...prev];
+                const netLineIndex = newLogs.findIndex(
+                  (log) =>
+                    log &&
+                    typeof log === "string" &&
+                    log.startsWith("[NET] Синхронизация узлов")
+                );
+                if (netLineIndex !== -1) {
+                  newLogs[
+                    netLineIndex
+                  ] = `[NET] Синхронизация узлов ${getProgressBar(
+                    currentPercent
+                  )}`;
+                }
+                return newLogs;
+              });
+              progressIndex++;
+              if (progressIndex < progressSteps.length) {
+                setTimeout(updateProgress, progressStepDuration);
+              } else {
+                // Синхронизация и подбор кода завершены одновременно
+                // Сразу показываем попап
+                setTimeout(() => {
+                  setIsScanning(false);
+                  setShowPopup(true);
+                }, 500);
+              }
+            }
+          };
+
+          setTimeout(updateProgress, 300);
         }
       };
-      setTimeout(addFinal, 300);
-    };
 
-    setTimeout(addPrepMessage, 300);
+      setTimeout(addPrepMessage, 300);
+    } catch (error) {
+      console.error("❌ Ошибка при поиске:", error);
+
+      // В случае ошибки НЕ запускаем анимацию терминала
+      // Просто показываем попап "Не найдено"
+      setIsScanning(false);
+      setShowNotFoundPopup(true);
+
+      // Добавляем сообщение об ошибке в терминал
+      setTerminalLogs((prev) => [
+        "[ERROR] Поиск не дал результатов",
+        "[INFO] Попробуйте еще раз",
+        ...prev,
+      ]);
+    }
   };
 
   return (
@@ -530,7 +638,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                 alt="bitcoin"
                 className={styles.balanceIcon}
               />
-              <span className={styles.balanceNumber}>3280</span>
+              <span className={styles.balanceNumber}>{balance.btc}</span>
             </div>
             <div className={styles.balanceDivider}></div>
             <div className={styles.balanceItem}>
@@ -539,7 +647,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                 alt="energy"
                 className={styles.balanceIcon}
               />
-              <span className={styles.balanceNumber}>12</span>
+              <span className={styles.balanceNumber}>{balance.energy}</span>
             </div>
           </div>
         </div>
@@ -648,9 +756,9 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                         {log}
                       </div>
                     ))
-                : liveFeedMessages.map((msg, index) =>
-                    renderLiveMessage(msg, index)
-                  )}
+                : liveFeedMessages
+                    .slice(0, 20) // Рендерим только первые 20 для оптимизации
+                    .map((msg, index) => renderLiveMessage(msg, index))}
             </div>
 
             <div className={styles.terminalInput}>
@@ -719,6 +827,17 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
           }}
           walletAddress={generatedCode || "4f3a9b2Sas..."}
           collectedAmount={257}
+        />
+      )}
+
+      {showNotFoundPopup && (
+        <NotFoundPopup
+          onClose={() => {
+            setShowNotFoundPopup(false);
+          }}
+          onRetry={() => {
+            setShowNotFoundPopup(false);
+          }}
         />
       )}
     </div>

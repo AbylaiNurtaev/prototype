@@ -8,6 +8,8 @@ import ExchangePage from "./pages/exchangePage/exchangePage";
 import ProfilePage from "./pages/profilePage/profilePage";
 import FriendsPage from "./pages/friendsPage/friendsPage";
 import NoTelegramNoPhone from "./components/NoTelegramNoPhone";
+import BlockedScreen from "./components/BlockedScreen";
+import { loginUser } from "./services/api";
 
 function App() {
   const [showPopup, setShowPopup] = useState(false);
@@ -15,6 +17,10 @@ function App() {
   const [isTaskPopupOpen, setIsTaskPopupOpen] = useState(false);
   const [isLeaderPopupOpen, setIsLeaderPopupOpen] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     const checkAccess = () => {
@@ -41,6 +47,34 @@ function App() {
     };
 
     checkAccess();
+  }, []);
+
+  // Логин пользователя при загрузке приложения
+  useEffect(() => {
+    const performLogin = async () => {
+      try {
+        console.log("🚀 Начало авторизации...");
+        const response = await loginUser();
+
+        console.log("✅ Авторизация успешна:", response);
+        setUserData(response);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("❌ Ошибка авторизации:", error);
+
+        // Проверяем, является ли это ошибкой 401 (заблокирован)
+        if (error.isBlocked || error.response?.status === 401) {
+          console.log("🚫 Пользователь заблокирован (401)");
+          setIsBlocked(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    performLogin();
   }, []);
 
   useEffect(() => {
@@ -103,6 +137,25 @@ function App() {
   //   return <NoTelegramNoPhone reason={accessDenied} />;
   // }
 
+  // Если пользователь заблокирован - показываем экран блокировки
+  if (isBlocked) {
+    return <BlockedScreen />;
+  }
+
+  // Показываем пустой экран во время авторизации
+  if (authLoading) {
+    return (
+      <div
+        className="app"
+        style={{
+          width: "100%",
+          height: "100vh",
+          background: "#1a1a1a",
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app">
       <Routes>
@@ -125,7 +178,7 @@ function App() {
           path="/exchange"
           element={<ExchangePage onInputFocus={setIsInputFocused} />}
         />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfilePage userData={userData} />} />
         <Route path="/friends" element={<FriendsPage />} />
       </Routes>
       <BottomNavigation

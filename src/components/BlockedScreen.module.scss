@@ -1,0 +1,75 @@
+.blockedScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.content {
+  text-align: center;
+  max-width: 400px;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iconContainer {
+  margin-bottom: 30px;
+  animation: pulse 2s ease-in-out infinite;
+
+  svg {
+    filter: drop-shadow(0 0 20px rgba(255, 68, 68, 0.5));
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ff4444;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+}
+
+.message {
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.details {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.6;
+
+  p {
+    margin: 5px 0;
+  }
+}
+
