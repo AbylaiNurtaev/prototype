@@ -10,9 +10,9 @@ const NotFoundPopup = ({ onClose, onRetry }) => {
           alt="Not Found"
           className={styles.failImage}
         />
-        
+
         <h2 className={styles.title}>Не найдено</h2>
-        
+
         <button className={styles.retryButton} onClick={onRetry}>
           Попробовать еще
         </button>
@@ -22,4 +22,3 @@ const NotFoundPopup = ({ onClose, onRetry }) => {
 };
 
 export default NotFoundPopup;
-
