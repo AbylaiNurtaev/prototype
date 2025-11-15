@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./leadersPage.module.scss";
 import LeaderPopup from "../../components/LeaderPopup";
 
-const LeadersPage = () => {
+const LeadersPage = ({ onPopupStateChange }) => {
   // Данные лидеров (можно будет заменить на данные из API)
   // Порядок: второй, первый, третий (для отображения: слева, центр, справа)
   const leaders = [
@@ -29,7 +29,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "8",
           label: "Количество друзей",
         },
@@ -39,7 +39,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "3420",
           label: "Доход с друзей",
         },
@@ -73,7 +73,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "6",
           label: "Количество друзей",
         },
@@ -83,7 +83,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "3280",
           label: "Доход с друзей",
         },
@@ -117,7 +117,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "5",
           label: "Количество друзей",
         },
@@ -127,7 +127,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "2980",
           label: "Доход с друзей",
         },
@@ -164,7 +164,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "7",
           label: "Количество друзей",
         },
@@ -174,7 +174,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "2450",
           label: "Доход с друзей",
         },
@@ -208,7 +208,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "6",
           label: "Количество друзей",
         },
@@ -218,7 +218,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "2320",
           label: "Доход с друзей",
         },
@@ -252,7 +252,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "4",
           label: "Количество друзей",
         },
@@ -262,7 +262,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "2180",
           label: "Доход с друзей",
         },
@@ -296,7 +296,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "6",
           label: "Количество друзей",
         },
@@ -306,7 +306,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "2050",
           label: "Доход с друзей",
         },
@@ -340,7 +340,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "4",
           label: "Количество друзей",
         },
@@ -350,7 +350,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "1960",
           label: "Доход с друзей",
         },
@@ -384,7 +384,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "5",
           label: "Количество друзей",
         },
@@ -394,7 +394,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "1885",
           label: "Доход с друзей",
         },
@@ -428,7 +428,7 @@ const LeadersPage = () => {
           label: "Сумма выводов",
         },
         {
-          icon: "/mine-icons/concl.svg",
+          icon: "/mine-icons/friends.svg",
           value: "4",
           label: "Количество друзей",
         },
@@ -438,7 +438,7 @@ const LeadersPage = () => {
           label: "Добыто биткоинов",
         },
         {
-          icon: "/mine-icons/bitcoin.svg",
+          icon: "/mine-icons/friends-income.svg",
           value: "1800",
           label: "Доход с друзей",
         },
@@ -455,14 +455,27 @@ const LeadersPage = () => {
   const [selectedLeader, setSelectedLeader] = useState(null);
 
   const handleTabClick = (tab) => () => setActiveTab(tab);
-  const handleLeaderClick = (leader) => () => setSelectedLeader(leader);
+  const handleLeaderClick = (leader) => () => {
+    setSelectedLeader(leader);
+    if (onPopupStateChange) {
+      onPopupStateChange(true);
+    }
+  };
   const handleLeaderKeyDown = (leader) => (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       setSelectedLeader(leader);
+      if (onPopupStateChange) {
+        onPopupStateChange(true);
+      }
     }
   };
-  const closeModal = () => setSelectedLeader(null);
+  const closeModal = () => {
+    setSelectedLeader(null);
+    if (onPopupStateChange) {
+      onPopupStateChange(false);
+    }
+  };
 
   useEffect(() => {
     if (!selectedLeader) {

@@ -13,6 +13,7 @@ function App() {
   const [showPopup, setShowPopup] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isTaskPopupOpen, setIsTaskPopupOpen] = useState(false);
+  const [isLeaderPopupOpen, setIsLeaderPopupOpen] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
 
   useEffect(() => {
@@ -106,7 +107,10 @@ function App() {
     <div className="app">
       <Routes>
         <Route path="/" element={<Navigate to="/mining" replace />} />
-        <Route path="/leaders" element={<LeadersPage />} />
+        <Route
+          path="/leaders"
+          element={<LeadersPage onPopupStateChange={setIsLeaderPopupOpen} />}
+        />
         <Route
           path="/tasks"
           element={<TasksPage onPopupStateChange={setIsTaskPopupOpen} />}
@@ -128,6 +132,7 @@ function App() {
         showPopup={showPopup}
         isInputFocused={isInputFocused}
         isTaskPopupOpen={isTaskPopupOpen}
+        isLeaderPopupOpen={isLeaderPopupOpen}
       />
     </div>
   );

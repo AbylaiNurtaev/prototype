@@ -49,9 +49,11 @@ const LeaderPopup = ({ leader, onClose }) => {
         </button>
 
         <div className={styles.modalHeader}>
-          <img src="/profile/avatar.svg" alt={leader.userName} />
-          <div className={styles.modalGradientTop}></div>
-          <div className={styles.modalGradientBottom}></div>
+          <img
+            className={styles.modalHeaderImage}
+            src="/profile/avatar.svg"
+            alt={leader.userName}
+          />
           <div className={styles.modalHeaderInfo}>
             <div className={styles.modalName}>{leader.userName}</div>
             <div className={styles.modalBalances}>
@@ -95,6 +97,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                 AI - agent {leader.aiAgentActive ? "активен" : "не активен"}
               </span>
               <svg
+                className={styles.modalAgentInfoIcon}
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
