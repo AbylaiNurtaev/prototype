@@ -136,6 +136,8 @@
   width: 30px;
   height: 30px;
   flex-shrink: 0;
+  border-radius: 50px;
+  object-fit: cover;
 }
 
 .taskInfo {
@@ -143,6 +145,7 @@
   flex-direction: column;
   gap: 5px;
   flex: 1;
+  min-width: 0;
 }
 
 .taskName {
@@ -151,6 +154,9 @@
   font-size: 14px;
   line-height: 130%;
   color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .taskRewards {

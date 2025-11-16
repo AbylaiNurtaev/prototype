@@ -84,6 +84,25 @@ width: 100vw;
   color: #fff;
 }
 
+.bannerDescription {
+  font-family: "Manrope", sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  text-align: center;
+  color: #fff;
+  margin-top: 10px;
+}
+
+.bannerProgress {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  color: #888;
+  margin-top: 5px;
+}
+
 .subtasksList {
   display: flex;
   flex-direction: column;

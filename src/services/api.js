@@ -152,3 +152,130 @@ export const consoleSearch = async (testMode = true) => {
     throw error;
   }
 };
+
+/**
+ * Получение заданий по провайдеру
+ * @param {string} provider - Провайдер (banners, sponsors)
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getTasks = async (provider, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.get(`/tasks/${provider}/get`, {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Получение внешних заданий
+ * @param {string} provider - Провайдер (subgram, flyer)
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getExternalTasks = async (provider, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.get(
+      `/tasks-external/${provider}/get`,
+      {
+        params: {
+          initData: initData,
+          ...(testMode && { test: "true" }),
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Проверить внешнее задание
+ * @param {string} provider - Провайдер (subgram, flyer)
+ * @param {number} taskId - ID задания
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const checkExternalTask = async (provider, taskId, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.post(
+      `/tasks-external/${provider}/check/${taskId}`,
+      null,
+      {
+        params: {
+          initData: initData,
+          ...(testMode && { test: "true" }),
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Забрать награду за внешнее задание
+ * @param {string} provider - Провайдер (subgram, flyer)
+ * @param {number} taskId - ID задания
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const claimExternalTask = async (provider, taskId, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.post(
+      `/tasks-external/${provider}/claim/${taskId}`,
+      null,
+      {
+        params: {
+          initData: initData,
+          ...(testMode && { test: "true" }),
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Проверить и забрать обычное задание (banners, sponsors)
+ * @param {number} taskId - ID задания
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const claimTask = async (taskId, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.post(`/tasks/claim/${taskId}`, null, {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`✅ CLAIM TASK ${taskId}:`, response.data);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
