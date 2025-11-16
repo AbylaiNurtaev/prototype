@@ -38,6 +38,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [inputCode, setInputCode] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
+  const [foundAmount, setFoundAmount] = useState(0); // Количество найденных BTC
   const inputRef = React.useRef(null);
   const addFinalMessagesRef = React.useRef(null);
 
@@ -65,39 +66,56 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     const fetchInitialData = async () => {
       try {
+        console.log("🔄 МАЙНИНГ: Начинаем загрузку баланса...");
+
         // Загружаем баланс
         const balanceData = await getBalance();
-        console.log("💰 Баланс загружен:", balanceData);
+        console.log("💰 МАЙНИНГ: Баланс получен от API:", balanceData);
+        console.log("💰 МАЙНИНГ: balanceData.wallet:", balanceData?.wallet);
+        console.log("💰 МАЙНИНГ: BTC:", balanceData?.wallet?.btc);
+        console.log("💰 МАЙНИНГ: Light (energy):", balanceData?.wallet?.light);
 
-        if (balanceData) {
+        if (balanceData && balanceData.wallet) {
+          const btcValue = parseFloat(balanceData.wallet.btc || 0);
+          const energyValue = parseFloat(balanceData.wallet.light || 0);
+
+          console.log(
+            "💰 МАЙНИНГ: Устанавливаем баланс - BTC:",
+            btcValue,
+            "Energy:",
+            energyValue
+          );
+
           setBalance({
-            btc: balanceData.btc || balanceData.bitcoin || 0,
-            energy: balanceData.energy || 0,
+            btc: btcValue,
+            energy: energyValue,
           });
+        } else {
+          console.warn("⚠️ МАЙНИНГ: balanceData.wallet отсутствует!");
         }
 
         // Загружаем Live Feed
         const liveFeedData = await getLiveFeed();
-        console.log("📡 Live Feed загружен, получено записей:", liveFeedData?.length || 0);
 
         // Добавляем начальные данные в очередь для постепенного появления
         if (liveFeedData && Array.isArray(liveFeedData)) {
           liveFeedQueueRef.current = [...liveFeedData];
-          console.log("📥 Начальная очередь:", liveFeedQueueRef.current.length);
         }
 
-        // Загружаем историю консоли
+        // Загружаем историю консоли (только для лога, не показываем в терминале)
         const historyData = await getConsoleHistory();
-        console.log("📜 История консоли загружена");
-        console.log("📜 Данные истории:", historyData);
-        console.log("📜 Тип данных:", typeof historyData);
-        console.log("📜 Это массив?:", Array.isArray(historyData));
+        console.log("📜 История консоли из API:");
+        console.log(historyData);
 
         // Формируем начальные приветственные сообщения с реальным username из Telegram
         const username = tgUser.username || `user${tgUser.id}` || "username";
-        const displayName = tgUser.first_name || tgUser.username || tgUser.last_name || "Пользователь";
-        const btcBalance = balanceData?.btc || balanceData?.bitcoin || 0;
-        const energyBalance = balanceData?.energy || 0;
+        const displayName =
+          tgUser.first_name ||
+          tgUser.username ||
+          tgUser.last_name ||
+          "Пользователь";
+        const btcBalance = parseFloat(balanceData?.wallet?.btc || 0);
+        const energyBalance = parseFloat(balanceData?.wallet?.light || 0);
 
         console.log("👤 Используем Telegram username:", username);
 
@@ -109,27 +127,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
           "[INFO] Готово к поиску. Нажми «Поиск», чтобы начать скан.",
         ];
 
-        // Сохраняем историю из API если есть
-        let apiHistory = [];
-        if (historyData && Array.isArray(historyData)) {
-          apiHistory = historyData.map((item) => {
-            if (typeof item === 'string') {
-              return item;
-            }
-            if (typeof item === 'object' && item !== null) {
-              return `[${item.type || 'INFO'}] ${item.message || JSON.stringify(item)}`;
-            }
-            return String(item);
-          });
-        }
-
         // Анимированное добавление начальных сообщений
-        // Сначала показываем историю из API если есть
-        if (apiHistory.length > 0) {
-          setTerminalLogs(apiHistory);
-        }
-
-        // Потом добавляем начальные сообщения по одному
         let messageIndex = 0;
         const addInitialMessage = () => {
           if (messageIndex < initialMessages.length) {
@@ -154,7 +152,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     const updateLiveFeed = async () => {
       try {
         const liveFeedData = await getLiveFeed();
-        console.log("🔄 Получено записей из API:", liveFeedData?.length || 0);
 
         // Добавляем новые записи в очередь
         if (liveFeedData && Array.isArray(liveFeedData)) {
@@ -162,7 +159,6 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             ...liveFeedQueueRef.current,
             ...liveFeedData,
           ];
-          console.log("📥 В очереди записей:", liveFeedQueueRef.current.length);
         }
       } catch (error) {
         console.error("❌ Ошибка обновления Live Feed:", error);
@@ -181,20 +177,18 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     const addMessageFromQueue = () => {
       if (liveFeedQueueRef.current.length > 0) {
         const nextMessage = liveFeedQueueRef.current.shift();
-        
+
         setLiveFeedMessages((prev) => {
           const newMessages = [nextMessage, ...prev];
           // Ограничиваем до 50 записей для оптимизации
           return newMessages.slice(0, 50);
         });
-        
-        console.log("✅ Добавлено сообщение в Live Feed");
       }
     };
 
     // Добавляем по одной записи каждые 1-2 секунды
     const getRandomDelay = () => Math.random() * 1000 + 1000; // 1-2 секунды
-    
+
     let timeoutId;
     const scheduleNext = () => {
       timeoutId = setTimeout(() => {
@@ -202,13 +196,14 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         scheduleNext();
       }, getRandomDelay());
     };
-    
+
     scheduleNext();
 
     return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
+    console.log("🚀 МАЙНИНГ: useEffect для загрузки Telegram user запущен");
     const tg = window?.Telegram?.WebApp;
 
     console.log("🔍 Debug - tg exists:", !!tg);
@@ -217,9 +212,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       const fallbackUser = {
         username: "username_telegram",
         first_name: "Пользователь",
+        id: 12345,
       };
       setTgUser(fallbackUser);
-      console.log("🔧 Development mode - Fallback user:", fallbackUser);
+      console.log(
+        "🔧 МАЙНИНГ: Development mode - Fallback user:",
+        fallbackUser
+      );
       return;
     }
 
@@ -234,11 +233,18 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
     console.log("🔍 Debug - user object:", u);
 
-    setTgUser(u);
-    setStartParam(tg.initDataUnsafe?.start_param ?? null);
-    setRawInitData(tg.initData ?? null);
-
-    if (u) {
+    // Если нет user data от Telegram - используем fallback
+    if (!u) {
+      console.log("⚠️ МАЙНИНГ: User data not available - используем fallback");
+      const fallbackUser = {
+        username: "username_telegram",
+        first_name: "Пользователь",
+        id: 12345,
+      };
+      setTgUser(fallbackUser);
+      console.log("🔧 МАЙНИНГ: Fallback user установлен:", fallbackUser);
+    } else {
+      setTgUser(u);
       console.log("👤 Telegram User Info:", {
         username: u.username || "не указан",
         first_name: u.first_name,
@@ -247,16 +253,15 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         language_code: u.language_code,
         is_premium: u.is_premium,
       });
-      console.log(
-        "🔗 Start Param:",
-        tg.initDataUnsafe?.start_param || "отсутствует"
-      );
-      console.log("📦 Init Data:", tg.initData ?? "отсутствует");
-    } else {
-      console.log(
-        "⚠️ User data not available - initDataUnsafe?.user is null/undefined"
-      );
     }
+
+    setStartParam(tg.initDataUnsafe?.start_param ?? null);
+    setRawInitData(tg.initData ?? null);
+    console.log(
+      "🔗 Start Param:",
+      tg.initDataUnsafe?.start_param || "отсутствует"
+    );
+    console.log("📦 Init Data:", tg.initData ?? "отсутствует");
   }, []);
 
   const uiUser = useMemo(() => {
@@ -427,33 +432,37 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
   const renderLiveMessage = (msg, index) => {
     // Если msg - объект из API
-    if (typeof msg === 'object' && msg !== null) {
-      const username = msg.user_data?.username || msg.user_data?.name || `user#${msg.user_id}`;
+    if (typeof msg === "object" && msg !== null) {
+      const username =
+        msg.user_data?.username || msg.user_data?.name || `user#${msg.user_id}`;
       const amount = msg.amount || 0;
-      const address = msg.adress || msg.address || '';
-      
+      const address = msg.adress || msg.address || "";
+
       // Форматируем адрес: первые 4 и последние 2 символа
-      const shortAddress = address.length > 6 
-        ? `${address.substring(0, 4)}..${address.substring(address.length - 2)}`
-        : address;
-      
+      const shortAddress =
+        address.length > 6
+          ? `${address.substring(0, 4)}..${address.substring(
+              address.length - 2
+            )}`
+          : address;
+
       // Форматируем время из created_at
-      let timeStr = '[--:--]';
+      let timeStr = "[--:--]";
       if (msg.created_at) {
         try {
           const date = new Date(msg.created_at);
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
           timeStr = `[${hours}:${minutes}]`;
         } catch (e) {
-          console.error('Ошибка парсинга даты:', e);
+          console.error("Ошибка парсинга даты:", e);
         }
       }
-      
+
       // Формат: [19:26] > @username: 298₿ | 0x01..4z
       const before = `${timeStr} > @${username}: `;
       const after = ` | ${shortAddress}`;
-      
+
       return (
         <div key={index} className={styles.logLine}>
           {before}
@@ -462,9 +471,9 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         </div>
       );
     }
-    
+
     // Если msg - строка (для обратной совместимости)
-    if (typeof msg === 'string') {
+    if (typeof msg === "string") {
       const match = msg.match(/^(.*?)(\d+)₿(.*)$/);
       if (!match) {
         return (
@@ -482,7 +491,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         </div>
       );
     }
-    
+
     // Fallback
     return (
       <div key={index} className={styles.logLine}>
@@ -499,14 +508,28 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     const username = uiUser.username || "username";
     const displayName = uiUser.displayName || "Пользователь";
 
-    // Генерируем случайный код заранее для использования в input и в сообщении
-    const randomCode = generateRandomCode();
-    setGeneratedCode(randomCode); // Сохраняем код для передачи в попап
-
     // Сначала вызываем API для проверки
     try {
       const searchData = await consoleSearch();
-      console.log("✅ Данные поиска получены:", searchData);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔍 РЕЗУЛЬТАТ ПОИСКА (/api/console/search):");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📊 Полный объект:", searchData);
+      console.log("📊 Status:", searchData?.status);
+      console.log("📊 Wallet:", searchData?.wallet);
+      console.log("📊 Amount:", searchData?.wallet?.amount);
+      console.log("📊 Address:", searchData?.wallet?.adress);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      // Берем реальный адрес и количество из API
+      const walletAddress = searchData?.wallet?.adress || "x01unknown";
+      const foundBtc = searchData?.wallet?.amount || 0;
+
+      setGeneratedCode(walletAddress); // Сохраняем адрес для попапа
+      setFoundAmount(foundBtc); // Сохраняем количество для попапа
+
+      console.log("💎 Найденный адрес:", walletAddress);
+      console.log("💰 Найденная сумма:", foundBtc, "BTC");
 
       // Если API вернул успешный результат - запускаем анимацию терминала
       const prepMessages = ["[SCAN] Подключение к узлам..."];
@@ -530,28 +553,35 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
           const progressStepDuration = 400; // ms на каждый шаг
           const totalSyncDuration = progressSteps.length * progressStepDuration;
 
-          // Запускаем подбор кода параллельно с синхронизацией
+          // Запускаем подбор кода (реальный адрес) параллельно с синхронизацией
           setTimeout(() => {
-            typeCode(randomCode, totalSyncDuration, () => {
+            typeCode(walletAddress, totalSyncDuration, () => {
               // Подбор кода завершён
             });
           }, 300);
 
-          // Обновляем баланс из ответа API
-          if (searchData && searchData.balance) {
-            setBalance({
-              btc: parseFloat(searchData.balance) || 0,
-              energy: balance.energy, // Энергия остается прежней
-            });
-          }
+          // Обновляем баланс после успешного поиска
+          const refreshBalance = async () => {
+            try {
+              const balanceData = await getBalance();
+              if (balanceData) {
+                setBalance({
+                  btc: parseFloat(balanceData.wallet?.btc || 0),
+                  energy: parseFloat(balanceData.wallet?.light || 0),
+                });
+              }
+            } catch (error) {
+              console.error("❌ Ошибка обновления баланса:", error);
+            }
+          };
+          refreshBalance();
 
           // Создаём финальные сообщения с данными из API
-          const collectedAmount = searchData?.collected_amount || searchData?.amount || "0";
           const finalMessages = [
             "[HASH] Проверка блоков... ОК",
             "[DETECT] Найден активный адрес",
-            `[ADDR] ${randomCode}`,
-            `[BALANCE] ${collectedAmount} BTC`,
+            `[ADDR] ${walletAddress}`,
+            `[BALANCE] ${foundBtc} BTC`,
             `[BOT] Отличная находка, ${displayName}.`,
             "[INFO] Поиск завершён",
           ];
@@ -561,10 +591,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             let finalIndex = 0;
             const addFinal = () => {
               if (finalIndex < finalMessages.length) {
-                setTerminalLogs((prev) => [
-                  finalMessages[finalIndex],
-                  ...prev,
-                ]);
+                setTerminalLogs((prev) => [finalMessages[finalIndex], ...prev]);
                 finalIndex++;
                 setTimeout(addFinal, 600);
               }
@@ -829,13 +856,14 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             setShowPopup(false);
             setInputCode("");
             setGeneratedCode("");
+            setFoundAmount(0);
             // Вызываем финальные сообщения после закрытия попапа
             if (addFinalMessagesRef.current) {
               addFinalMessagesRef.current();
             }
           }}
-          walletAddress={generatedCode || "4f3a9b2Sas..."}
-          collectedAmount={257}
+          walletAddress={generatedCode || "x01unknown"}
+          collectedAmount={foundAmount || 0}
         />
       )}
 

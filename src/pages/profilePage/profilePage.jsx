@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./profilePage.module.scss";
 import { getBalance } from "../../services/api";
 
-const ProfilePage = () => {
+const ProfilePage = ({ userData }) => {
   const [userPhoto, setUserPhoto] = useState(null);
   const [userName, setUserName] = useState("user");
   const [balance, setBalance] = useState({
@@ -14,18 +14,30 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchBalance = async () => {
       try {
+        console.log("🔄 ПРОФИЛЬ: Начинаем загрузку баланса...");
+        
         const balanceData = await getBalance();
-        console.log("💰 Баланс загружен:", balanceData);
+        console.log("💰 ПРОФИЛЬ: Баланс получен от API:", balanceData);
+        console.log("💰 ПРОФИЛЬ: balanceData.wallet:", balanceData?.wallet);
+        console.log("💰 ПРОФИЛЬ: BTC:", balanceData?.wallet?.btc);
+        console.log("💰 ПРОФИЛЬ: Light (energy):", balanceData?.wallet?.light);
         
         // Обновляем баланс из ответа API
-        if (balanceData) {
+        if (balanceData && balanceData.wallet) {
+          const btcValue = parseFloat(balanceData.wallet.btc || 0);
+          const energyValue = parseFloat(balanceData.wallet.light || 0);
+          
+          console.log("💰 ПРОФИЛЬ: Устанавливаем баланс - BTC:", btcValue, "Energy:", energyValue);
+          
           setBalance({
-            btc: balanceData.btc || balanceData.bitcoin || 0,
-            energy: balanceData.energy || 0,
+            btc: btcValue,
+            energy: energyValue,
           });
+        } else {
+          console.warn("⚠️ ПРОФИЛЬ: balanceData.wallet отсутствует!");
         }
       } catch (error) {
-        console.error("❌ Ошибка загрузки баланса:", error);
+        console.error("❌ ПРОФИЛЬ: Ошибка загрузки баланса:", error);
       }
     };
 
@@ -33,26 +45,43 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => {
-    const tg = window?.Telegram?.WebApp;
+    console.log("📊 ProfilePage - userData из API:", userData);
 
+    // Сначала пытаемся получить данные из API response
+    if (userData) {
+      // Проверяем есть ли данные пользователя в ответе API
+      if (userData.user_data) {
+        const apiUser = userData.user_data;
+        console.log("✅ Используем данные из API:", apiUser);
+        
+        if (apiUser.photo_url) {
+          setUserPhoto(apiUser.photo_url);
+        }
+        
+        const displayName = apiUser.name || apiUser.username || apiUser.first_name || "user";
+        setUserName(displayName);
+        return;
+      }
+    }
+
+    // Fallback на Telegram WebApp данные
+    const tg = window?.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       const user = tg.initDataUnsafe?.user;
 
       if (user) {
-        console.log("User data:", user);
+        console.log("✅ Используем данные из Telegram WebApp:", user);
 
         if (user.photo_url) {
-          console.log("Original Photo URL:", user.photo_url);
           setUserPhoto(user.photo_url);
         }
 
-        // Получаем имя пользователя
         const displayName = user.first_name || user.username || "user";
         setUserName(displayName);
       }
     }
-  }, []);
+  }, [userData]);
 
   return (
     <div className={styles.profilePage}>

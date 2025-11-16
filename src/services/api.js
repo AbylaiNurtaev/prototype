@@ -95,16 +95,10 @@ export const getBalance = async (testMode = true) => {
  * Получение Live Feed для терминала
  */
 export const getLiveFeed = async () => {
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📡 ПОЛУЧЕНИЕ LIVE FEED");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
   try {
     const response = await axiosInstance.get("/console/live-feed");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     return response.data;
   } catch (error) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     throw error;
   }
 };
@@ -145,12 +139,6 @@ export const getConsoleHistory = async (testMode = true) => {
 export const consoleSearch = async (testMode = true) => {
   const initData = getInitData();
 
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🔍 НАЧАЛО ПОИСКА (CONSOLE SEARCH)");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📦 InitData:", initData);
-  console.log("🧪 Test Mode:", testMode);
-
   try {
     const response = await axiosInstance.post("/console/search", null, {
       params: {
@@ -159,17 +147,8 @@ export const consoleSearch = async (testMode = true) => {
       },
     });
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("✅ ОТВЕТ ОТ /api/console/search:");
-    console.log("📊 Полный ответ:", response.data);
-    console.log("📊 Тип данных:", typeof response.data);
-    console.log("📊 Это массив?:", Array.isArray(response.data));
-    console.log("📊 JSON:", JSON.stringify(response.data, null, 2));
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
     return response.data;
   } catch (error) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     throw error;
   }
 };
