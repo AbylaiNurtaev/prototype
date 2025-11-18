@@ -504,7 +504,7 @@ const LeadersPage = ({ onPopupStateChange }) => {
         <div className={styles.prototypeText}>prototype</div>
         <div className={styles.banner}>
           <img
-            src="/leaders/bgbanner.png"
+            src="/leaders/bgbanner.svg"
             alt="banner background"
             className={styles.bannerBg}
           />
