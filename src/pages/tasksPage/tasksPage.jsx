@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
 import SuccessToast from "../../components/SuccessToast";
@@ -11,6 +11,7 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [loading, setLoading] = useState(true);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
+  const pageRef = useRef(null);
 
   // Загрузка заданий из API
   useEffect(() => {
@@ -123,7 +124,9 @@ const TasksPage = ({ onPopupStateChange }) => {
     onPopupStateChange?.(false);
     
     // Скроллим вверх к баннеру
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (pageRef.current) {
+      pageRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     
     // Показываем toast
     setShowSuccessToast(true);
@@ -164,14 +167,16 @@ const TasksPage = ({ onPopupStateChange }) => {
     onPopupStateChange?.(false);
     
     // Скроллим вверх к баннеру
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (pageRef.current) {
+      pageRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     
     // Показываем toast
     setShowErrorToast(true);
   };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={pageRef}>
       <img
         src="/profile/shineProfile.svg"
         alt="shine"
