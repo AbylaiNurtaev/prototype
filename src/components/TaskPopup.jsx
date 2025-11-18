@@ -49,14 +49,15 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
       }
       
       // Вызываем колбэк для показа toast и обновления списка
+      // Колбэк сам закроет попап
       if (onTaskCompleted) {
         onTaskCompleted(task.id);
       }
-      onClose();
     } catch (error) {
       console.error("❌ Ошибка проверки задания:", error);
       
       // Вызываем колбэк для показа toast с ошибкой
+      // Колбэк сам закроет попап
       if (onTaskFailed) {
         onTaskFailed();
       }

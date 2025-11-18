@@ -118,6 +118,13 @@ const TasksPage = ({ onPopupStateChange }) => {
   const handleTaskCompleted = (taskId) => {
     console.log("✅ Задание выполнено, ID:", taskId);
     
+    // Закрываем попап
+    setSelectedTask(null);
+    onPopupStateChange?.(false);
+    
+    // Скроллим вверх к баннеру
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     // Показываем toast
     setShowSuccessToast(true);
     
@@ -151,6 +158,15 @@ const TasksPage = ({ onPopupStateChange }) => {
   // Обработчик ошибки при выполнении задания
   const handleTaskFailed = () => {
     console.log("❌ Ошибка выполнения задания");
+    
+    // Закрываем попап
+    setSelectedTask(null);
+    onPopupStateChange?.(false);
+    
+    // Скроллим вверх к баннеру
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Показываем toast
     setShowErrorToast(true);
   };
 
