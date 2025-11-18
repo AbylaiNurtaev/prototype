@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import BottomNavigation from "./components/BottomNavigation";
 import LeadersPage from "./pages/leadersPage/leadersPage";
 import TasksPage from "./pages/tasksPage/tasksPage";
@@ -21,6 +21,11 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
+  
+  // Хуки должны быть в самом начале, до любых условных return
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath = location.pathname;
 
   useEffect(() => {
     const checkAccess = () => {
@@ -133,6 +138,13 @@ function App() {
     };
   }, [accessDenied]);
 
+  // Редирект на /mining если на главной
+  useEffect(() => {
+    if (location.pathname === "/") {
+      navigate("/mining", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
   // if (accessDenied) {
   //   return <NoTelegramNoPhone reason={accessDenied} />;
   // }
@@ -158,29 +170,31 @@ function App() {
 
   return (
     <div className="app">
-      <Routes>
-        <Route path="/" element={<Navigate to="/mining" replace />} />
-        <Route
-          path="/leaders"
-          element={<LeadersPage onPopupStateChange={setIsLeaderPopupOpen} />}
-        />
-        <Route
-          path="/tasks"
-          element={<TasksPage onPopupStateChange={setIsTaskPopupOpen} />}
-        />
-        <Route
-          path="/mining"
-          element={
-            <MiningPage showPopup={showPopup} setShowPopup={setShowPopup} />
-          }
-        />
-        <Route
-          path="/exchange"
-          element={<ExchangePage onInputFocus={setIsInputFocused} />}
-        />
-        <Route path="/profile" element={<ProfilePage userData={userData} />} />
-        <Route path="/friends" element={<FriendsPage />} />
-      </Routes>
+      {/* Рендерим все страницы сразу, но показываем только активную */}
+      <div style={{ display: currentPath === "/leaders" ? "block" : "none" }}>
+        <LeadersPage onPopupStateChange={setIsLeaderPopupOpen} />
+      </div>
+      
+      <div style={{ display: currentPath === "/tasks" ? "block" : "none" }}>
+        <TasksPage onPopupStateChange={setIsTaskPopupOpen} />
+      </div>
+      
+      <div style={{ display: currentPath === "/mining" ? "block" : "none" }}>
+        <MiningPage showPopup={showPopup} setShowPopup={setShowPopup} />
+      </div>
+      
+      <div style={{ display: currentPath === "/exchange" ? "block" : "none" }}>
+        <ExchangePage onInputFocus={setIsInputFocused} />
+      </div>
+      
+      <div style={{ display: currentPath === "/profile" ? "block" : "none" }}>
+        <ProfilePage userData={userData} />
+      </div>
+      
+      <div style={{ display: currentPath === "/friends" ? "block" : "none" }}>
+        <FriendsPage />
+      </div>
+      
       <BottomNavigation
         showPopup={showPopup}
         isInputFocused={isInputFocused}
