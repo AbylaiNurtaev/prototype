@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styles from "./TaskPopup.module.scss";
 import { checkExternalTask, claimExternalTask, claimTask } from "../services/api";
 
-const TaskPopup = ({ task, onClose }) => {
+const TaskPopup = ({ task, onClose, onTaskCompleted }) => {
   if (!task) return null;
 
   const [isChecking, setIsChecking] = useState(false);
@@ -48,7 +48,10 @@ const TaskPopup = ({ task, onClose }) => {
         console.log("✅ Задание выполнено:", result);
       }
       
-      alert("Задание выполнено! Награда получена.");
+      // Вызываем колбэк для показа toast и обновления списка
+      if (onTaskCompleted) {
+        onTaskCompleted(task.id);
+      }
       onClose();
     } catch (error) {
       console.error("❌ Ошибка проверки задания:", error);
