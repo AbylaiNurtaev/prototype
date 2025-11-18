@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
 import SuccessToast from "../../components/SuccessToast";
+import ErrorToast from "../../components/ErrorToast";
 import { getTasks, getExternalTasks } from "../../services/api";
 
 const TasksPage = ({ onPopupStateChange }) => {
@@ -9,6 +10,7 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
 
   // Загрузка заданий из API
   useEffect(() => {
@@ -146,6 +148,12 @@ const TasksPage = ({ onPopupStateChange }) => {
     });
   };
 
+  // Обработчик ошибки при выполнении задания
+  const handleTaskFailed = () => {
+    console.log("❌ Ошибка выполнения задания");
+    setShowErrorToast(true);
+  };
+
   return (
     <div className={styles.page}>
       <img
@@ -171,6 +179,10 @@ const TasksPage = ({ onPopupStateChange }) => {
           
           {showSuccessToast && (
             <SuccessToast onClose={() => setShowSuccessToast(false)} />
+          )}
+          
+          {showErrorToast && (
+            <ErrorToast onClose={() => setShowErrorToast(false)} />
           )}
         </div>
 
@@ -248,6 +260,7 @@ const TasksPage = ({ onPopupStateChange }) => {
             onPopupStateChange?.(false);
           }}
           onTaskCompleted={handleTaskCompleted}
+          onTaskFailed={handleTaskFailed}
         />
       )}
     </div>
