@@ -168,6 +168,10 @@ const TasksPage = ({ onPopupStateChange }) => {
               Выполняй задания — получай энергию и находи биткоины в процессе.
             </div>
           </div>
+          
+          {showSuccessToast && (
+            <SuccessToast onClose={() => setShowSuccessToast(false)} />
+          )}
         </div>
 
         <div className={styles.tasksTitle}>Список заданий</div>
@@ -245,10 +249,6 @@ const TasksPage = ({ onPopupStateChange }) => {
           }}
           onTaskCompleted={handleTaskCompleted}
         />
-      )}
-
-      {showSuccessToast && (
-        <SuccessToast onClose={() => setShowSuccessToast(false)} />
       )}
     </div>
   );
