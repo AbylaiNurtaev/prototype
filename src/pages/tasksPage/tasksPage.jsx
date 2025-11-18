@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
-import SuccessToast from "../../components/SuccessToast";
-import ErrorToast from "../../components/ErrorToast";
 import { getTasks, getExternalTasks } from "../../services/api";
 
 const TasksPage = ({ onPopupStateChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [showErrorToast, setShowErrorToast] = useState(false);
 
   // Загрузка заданий из API
   useEffect(() => {
@@ -60,18 +56,8 @@ const TasksPage = ({ onPopupStateChange }) => {
         // Объединяем задания
         const allTasks = [...bannerTasks, ...sponsorTasks, ...subgramTasks, ...flyerTasks];
 
-        // Сортируем: сначала невыполненные, потом CLAIMED в конец
-        const sortedTasks = allTasks.sort((a, b) => {
-          const aIsClaimed = a.status === "CLAIMED";
-          const bIsClaimed = b.status === "CLAIMED";
-          
-          if (aIsClaimed && !bIsClaimed) return 1;
-          if (!aIsClaimed && bIsClaimed) return -1;
-          return 0;
-        });
-
         // Преобразуем данные API в формат UI
-        const formattedTasks = sortedTasks.map((task) => {
+        const formattedTasks = allTasks.map((task) => {
 
           // Определяем тип задания
           const isExternal = task.provider === "flyer" || task.provider === "subgram";
@@ -114,46 +100,6 @@ const TasksPage = ({ onPopupStateChange }) => {
     loadTasks();
   }, []);
 
-  // Обработчик успешного выполнения задания
-  const handleTaskCompleted = (taskId) => {
-    console.log("✅ Задание выполнено, ID:", taskId);
-    
-    // Показываем toast
-    setShowSuccessToast(true);
-    
-    // Обновляем статус задания на CLAIMED и перемещаем в конец
-    setTasks((prevTasks) => {
-      const updatedTasks = prevTasks.map((task) => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            apiData: {
-              ...task.apiData,
-              status: "CLAIMED",
-            },
-          };
-        }
-        return task;
-      });
-      
-      // Сортируем: CLAIMED в конец
-      return updatedTasks.sort((a, b) => {
-        const aIsClaimed = a.apiData?.status === "CLAIMED";
-        const bIsClaimed = b.apiData?.status === "CLAIMED";
-        
-        if (aIsClaimed && !bIsClaimed) return 1;
-        if (!aIsClaimed && bIsClaimed) return -1;
-        return 0;
-      });
-    });
-  };
-
-  // Обработчик ошибки при выполнении задания
-  const handleTaskFailed = () => {
-    console.log("❌ Ошибка выполнения задания");
-    setShowErrorToast(true);
-  };
-
   return (
     <div className={styles.page}>
       <img
@@ -176,14 +122,6 @@ const TasksPage = ({ onPopupStateChange }) => {
               Выполняй задания — получай энергию и находи биткоины в процессе.
             </div>
           </div>
-          
-          {showSuccessToast && (
-            <SuccessToast onClose={() => setShowSuccessToast(false)} />
-          )}
-          
-          {showErrorToast && (
-            <ErrorToast onClose={() => setShowErrorToast(false)} />
-          )}
         </div>
 
         <div className={styles.tasksTitle}>Список заданий</div>
@@ -239,13 +177,8 @@ const TasksPage = ({ onPopupStateChange }) => {
                   setSelectedTask(task);
                   onPopupStateChange?.(true);
                 }}
-                disabled={task.apiData?.status === "CLAIMED"}
-                style={{
-                  opacity: task.apiData?.status === "CLAIMED" ? 0.5 : 1,
-                  cursor: task.apiData?.status === "CLAIMED" ? "not-allowed" : "pointer",
-                }}
               >
-                {task.apiData?.status === "CLAIMED" ? "Выполнено" : "Выполнить"}
+                Выполнить
               </button>
             </div>
           )))}
@@ -259,8 +192,6 @@ const TasksPage = ({ onPopupStateChange }) => {
             setSelectedTask(null);
             onPopupStateChange?.(false);
           }}
-          onTaskCompleted={handleTaskCompleted}
-          onTaskFailed={handleTaskFailed}
         />
       )}
     </div>

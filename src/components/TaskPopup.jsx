@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import styles from "./TaskPopup.module.scss";
+import SuccessToast from "./SuccessToast";
+import ErrorToast from "./ErrorToast";
 import { checkExternalTask, claimExternalTask, claimTask } from "../services/api";
 
-const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
+const TaskPopup = ({ task, onClose }) => {
   if (!task) return null;
 
   const [isChecking, setIsChecking] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
 
   // Получаем данные из API
   const apiData = task.apiData || {};
@@ -48,19 +52,18 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         console.log("✅ Задание выполнено:", result);
       }
       
-      // Вызываем колбэк для показа toast и обновления списка
-      if (onTaskCompleted) {
-        onTaskCompleted(task.id);
-      }
-      onClose();
+      // Показываем success toast
+      setShowSuccessToast(true);
+      
+      // Закрываем popup через 4 секунды
+      setTimeout(() => {
+        onClose();
+      }, 4000);
     } catch (error) {
       console.error("❌ Ошибка проверки задания:", error);
       
-      // Вызываем колбэк для показа toast с ошибкой
-      if (onTaskFailed) {
-        onTaskFailed();
-      }
-      onClose();
+      // Показываем error toast вместо alert
+      setShowErrorToast(true);
     } finally {
       setIsChecking(false);
     }
@@ -74,7 +77,19 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
     return (
       <div className={styles.overlay} onClick={onClose}>
-        <div className={styles.popup} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.popup} onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+          {showSuccessToast && (
+            <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+              <SuccessToast onClose={() => setShowSuccessToast(false)} />
+            </div>
+          )}
+          
+          {showErrorToast && (
+            <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+              <ErrorToast onClose={() => setShowErrorToast(false)} />
+            </div>
+          )}
+          
           <button className={styles.closeButton} onClick={onClose}>
             <svg
               width="24"
@@ -132,7 +147,19 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.popup} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.popup} onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+        {showSuccessToast && (
+          <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+            <SuccessToast onClose={() => setShowSuccessToast(false)} />
+          </div>
+        )}
+        
+        {showErrorToast && (
+          <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+            <ErrorToast onClose={() => setShowErrorToast(false)} />
+          </div>
+        )}
+        
         <button className={styles.closeButton} onClick={onClose}>
           <svg
             width="24"
