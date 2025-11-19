@@ -13,111 +13,127 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const pageRef = useRef(null);
 
-  // Загрузка заданий из API
+  // Функция загрузки заданий
+  const loadTasks = async () => {
+    try {
+      console.log("📋 TasksPage: Загрузка заданий...");
+      setLoading(true);
+      
+      // Загружаем все типы заданий
+      const [bannersResponse, sponsorsResponse, subgramResponse, flyerResponse] = await Promise.all([
+        getTasks("banners"),
+        getTasks("sponsors"),
+        getExternalTasks("subgram"),
+        getExternalTasks("flyer"),
+      ]);
+
+      console.log("🎯 Banners:", bannersResponse);
+      console.log("💎 Sponsors:", sponsorsResponse);
+      
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🌐 ВНЕШНИЕ ЗАДАНИЯ - SUBGRAM:");
+      console.log(subgramResponse);
+      console.log("Тип:", typeof subgramResponse);
+      console.log("Это массив?:", Array.isArray(subgramResponse));
+      if (subgramResponse?.tasks) {
+        console.log("Tasks:", subgramResponse.tasks);
+        console.log("Количество:", subgramResponse.tasks.length);
+      }
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🌐 ВНЕШНИЕ ЗАДАНИЯ - FLYER:");
+      console.log(flyerResponse);
+      console.log("Тип:", typeof flyerResponse);
+      console.log("Это массив?:", Array.isArray(flyerResponse));
+      if (flyerResponse?.tasks) {
+        console.log("Tasks:", flyerResponse.tasks);
+        console.log("Количество:", flyerResponse.tasks.length);
+      }
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      // Извлекаем массивы заданий
+      const bannerTasks = bannersResponse?.tasks || [];
+      const sponsorTasks = sponsorsResponse?.tasks || [];
+      const subgramTasks = subgramResponse?.tasks || [];
+      const flyerTasks = flyerResponse?.tasks || [];
+
+      // Объединяем задания
+      const allTasks = [...bannerTasks, ...sponsorTasks, ...subgramTasks, ...flyerTasks];
+
+      // Сортируем: сначала невыполненные, потом CLAIMED в конец
+      const sortedTasks = allTasks.sort((a, b) => {
+        const aIsClaimed = a.status === "CLAIMED";
+        const bIsClaimed = b.status === "CLAIMED";
+        
+        if (aIsClaimed && !bIsClaimed) return 1;
+        if (!aIsClaimed && bIsClaimed) return -1;
+        return 0;
+      });
+
+      // Преобразуем данные API в формат UI
+      const formattedTasks = sortedTasks.map((task) => {
+
+        // Определяем тип задания
+        const isExternal = task.provider === "flyer" || task.provider === "subgram";
+        
+        // Определяем иконку в зависимости от типа
+        let icon = "/tasks/channeltask.png"; // по умолчанию
+        
+        if (isExternal) {
+          // Для внешних заданий используем icon из details
+          icon = task.details?.icon || "/tasks/channeltask.png";
+        } else if (task.type === "banners-cpc") {
+          icon = "/tasks/bannerclicktask.png";
+        } else if (task.type === "banners-cpm") {
+          icon = "/tasks/videotask.png";
+        } else if (task.type === "sponsor-subs" || task.type === "sponsors-external") {
+          // Для спонсоров используем фото из API если есть
+          icon = task.details?.photo || "/tasks/channeltask.png";
+        }
+
+        return {
+          id: task.id,
+          name: task.view_details?.title || task.details?.name || "Задание",
+          icon: icon,
+          energy: task.rewards?.coins || 0,
+          progress: `${task.user_progress || 0}/${task.target_progress || 1}`,
+          // Сохраняем полные данные из API
+          apiData: task,
+        };
+      });
+
+      console.log("✅ Отформатированные задания:", formattedTasks);
+      setTasks(formattedTasks);
+    } catch (error) {
+      console.error("❌ Ошибка загрузки заданий:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Загрузка заданий из API при монтировании и при повторном посещении страницы
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        console.log("📋 TasksPage: Загрузка заданий...");
-        
-        // Загружаем все типы заданий
-        const [bannersResponse, sponsorsResponse, subgramResponse, flyerResponse] = await Promise.all([
-          getTasks("banners"),
-          getTasks("sponsors"),
-          getExternalTasks("subgram"),
-          getExternalTasks("flyer"),
-        ]);
+    loadTasks();
 
-        console.log("🎯 Banners:", bannersResponse);
-        console.log("💎 Sponsors:", sponsorsResponse);
-        
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log("🌐 ВНЕШНИЕ ЗАДАНИЯ - SUBGRAM:");
-        console.log(subgramResponse);
-        console.log("Тип:", typeof subgramResponse);
-        console.log("Это массив?:", Array.isArray(subgramResponse));
-        if (subgramResponse?.tasks) {
-          console.log("Tasks:", subgramResponse.tasks);
-          console.log("Количество:", subgramResponse.tasks.length);
-        }
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log("🌐 ВНЕШНИЕ ЗАДАНИЯ - FLYER:");
-        console.log(flyerResponse);
-        console.log("Тип:", typeof flyerResponse);
-        console.log("Это массив?:", Array.isArray(flyerResponse));
-        if (flyerResponse?.tasks) {
-          console.log("Tasks:", flyerResponse.tasks);
-          console.log("Количество:", flyerResponse.tasks.length);
-        }
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-        // Извлекаем массивы заданий
-        const bannerTasks = bannersResponse?.tasks || [];
-        const sponsorTasks = sponsorsResponse?.tasks || [];
-        const subgramTasks = subgramResponse?.tasks || [];
-        const flyerTasks = flyerResponse?.tasks || [];
-
-        // Объединяем задания
-        const allTasks = [...bannerTasks, ...sponsorTasks, ...subgramTasks, ...flyerTasks];
-
-        // Сортируем: сначала невыполненные, потом CLAIMED в конец
-        const sortedTasks = allTasks.sort((a, b) => {
-          const aIsClaimed = a.status === "CLAIMED";
-          const bIsClaimed = b.status === "CLAIMED";
-          
-          if (aIsClaimed && !bIsClaimed) return 1;
-          if (!aIsClaimed && bIsClaimed) return -1;
-          return 0;
-        });
-
-        // Преобразуем данные API в формат UI
-        const formattedTasks = sortedTasks.map((task) => {
-
-          // Определяем тип задания
-          const isExternal = task.provider === "flyer" || task.provider === "subgram";
-          
-          // Определяем иконку в зависимости от типа
-          let icon = "/tasks/channeltask.png"; // по умолчанию
-          
-          if (isExternal) {
-            // Для внешних заданий используем icon из details
-            icon = task.details?.icon || "/tasks/channeltask.png";
-          } else if (task.type === "banners-cpc") {
-            icon = "/tasks/bannerclicktask.png";
-          } else if (task.type === "banners-cpm") {
-            icon = "/tasks/videotask.png";
-          } else if (task.type === "sponsor-subs" || task.type === "sponsors-external") {
-            // Для спонсоров используем фото из API если есть
-            icon = task.details?.photo || "/tasks/channeltask.png";
-          }
-
-          return {
-            id: task.id,
-            name: task.view_details?.title || task.details?.name || "Задание",
-            icon: icon,
-            energy: task.rewards?.coins || 0,
-            progress: `${task.user_progress || 0}/${task.target_progress || 1}`,
-            // Сохраняем полные данные из API
-            apiData: task,
-          };
-        });
-
-        console.log("✅ Отформатированные задания:", formattedTasks);
-        setTasks(formattedTasks);
-      } catch (error) {
-        console.error("❌ Ошибка загрузки заданий:", error);
-      } finally {
-        setLoading(false);
+    // Обработчик события видимости страницы (когда пользователь возвращается на вкладку)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("🔄 Страница стала видимой - обновляем задания...");
+        loadTasks();
       }
     };
 
-    loadTasks();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Обработчик успешного выполнения задания
-  const handleTaskCompleted = (taskId) => {
-    console.log("✅ Задание выполнено, ID:", taskId);
+  const handleTaskCompleted = (taskId, isWaiting = false) => {
+    console.log(isWaiting ? "⏳ Задание отправлено в обработку, ID:" : "✅ Задание выполнено, ID:", taskId);
     
     // Закрываем попап
     setSelectedTask(null);
@@ -128,10 +144,12 @@ const TasksPage = ({ onPopupStateChange }) => {
       pageRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
-    // Показываем toast
-    setShowSuccessToast(true);
+    // Показываем toast только если задание выполнено
+    if (!isWaiting) {
+      setShowSuccessToast(true);
+    }
     
-    // Обновляем статус задания на CLAIMED и перемещаем в конец
+    // Обновляем статус задания на CLAIMED или WAITING и перемещаем в конец
     setTasks((prevTasks) => {
       const updatedTasks = prevTasks.map((task) => {
         if (task.id === taskId) {
@@ -139,7 +157,7 @@ const TasksPage = ({ onPopupStateChange }) => {
             ...task,
             apiData: {
               ...task.apiData,
-              status: "CLAIMED",
+              status: isWaiting ? "WAITING" : "CLAIMED",
             },
           };
         }
@@ -257,16 +275,27 @@ const TasksPage = ({ onPopupStateChange }) => {
               <button
                 className={styles.taskButton}
                 onClick={() => {
-                  setSelectedTask(task);
-                  onPopupStateChange?.(true);
+                  if (task.apiData?.status !== "CLAIMED" && task.apiData?.status !== "WAITING") {
+                    setSelectedTask(task);
+                    onPopupStateChange?.(true);
+                  }
                 }}
-                disabled={task.apiData?.status === "CLAIMED"}
+                disabled={task.apiData?.status === "CLAIMED" || task.apiData?.status === "WAITING"}
                 style={{
                   opacity: task.apiData?.status === "CLAIMED" ? 0.5 : 1,
-                  cursor: task.apiData?.status === "CLAIMED" ? "not-allowed" : "pointer",
+                  cursor: 
+                    task.apiData?.status === "CLAIMED" || task.apiData?.status === "WAITING" 
+                      ? "not-allowed" 
+                      : "pointer",
+                  background: task.apiData?.status === "WAITING" ? "rgba(82, 100, 206, 0.25)" : "transparent",
+                  border: task.apiData?.status === "WAITING" ? "none" : "1px solid #5264ce",
                 }}
               >
-                {task.apiData?.status === "CLAIMED" ? "Выполнено" : "Выполнить"}
+                {task.apiData?.status === "CLAIMED" 
+                  ? "Выполнено" 
+                  : task.apiData?.status === "WAITING" 
+                    ? "В обработке" 
+                    : "Выполнить"}
               </button>
             </div>
           )))}

@@ -39,7 +39,19 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
       
       if (isExternal) {
         // Для внешних заданий: check -> claim
-        await checkExternalTask(provider, task.id);
+        const checkResult = await checkExternalTask(provider, task.id);
+        console.log("🔍 Результат проверки внешнего задания:", checkResult);
+        
+        // Если задание в обработке (WAITING), закрываем попап и обновляем список
+        if (checkResult?.status === "WAITING") {
+          console.log("⏳ Задание отправлено в обработку");
+          // Обновляем статус задания на WAITING
+          if (onTaskCompleted) {
+            onTaskCompleted(task.id, true); // true = WAITING статус
+          }
+          return;
+        }
+        
         const result = await claimExternalTask(provider, task.id);
         console.log("✅ Внешнее задание выполнено:", result);
       } else {
