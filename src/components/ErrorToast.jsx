@@ -13,7 +13,10 @@ const ErrorToast = ({ onClose, duration = 4000 }) => {
         const newProgress = prev + step;
         if (newProgress >= 100) {
           clearInterval(timer);
-          onClose();
+          // Вызываем onClose в следующем тике, чтобы избежать setState во время рендеринга
+          setTimeout(() => {
+            onClose();
+          }, 0);
           return 100;
         }
         return newProgress;

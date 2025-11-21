@@ -41,6 +41,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const [foundAmount, setFoundAmount] = useState(0); // Количество найденных BTC
   const inputRef = React.useRef(null);
   const addFinalMessagesRef = React.useRef(null);
+  const typingTimersRef = React.useRef([]); // Массив для хранения активных таймеров печати
 
   // Баланс пользователя
   const [balance, setBalance] = useState({
@@ -361,8 +362,21 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     return `${hash}`;
   };
 
+  // Функция для очистки всех таймеров печати
+  const clearTypingTimers = () => {
+    typingTimersRef.current.forEach((timerId) => {
+      clearTimeout(timerId);
+    });
+    typingTimersRef.current = [];
+    setIsTyping(false);
+    setInputCode("");
+  };
+
   const typeCode = (code, totalDuration, onComplete) => {
     if (isTyping || !code) return;
+
+    // Очищаем предыдущие таймеры, если есть
+    clearTypingTimers();
 
     // Проверяем, что code - это строка и не пустая
     const codeStr = String(code || "");
@@ -403,7 +417,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
               return baseCode + randomChar;
             });
             attempts++;
-            setTimeout(tryChar, attemptDuration);
+            const timerId = setTimeout(tryChar, attemptDuration);
+            typingTimersRef.current.push(timerId);
           } else {
             // Устанавливаем правильный символ
             index++;
@@ -413,9 +428,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
             // Проверяем, нужно ли продолжать
             if (index < totalLength) {
-              setTimeout(typeChar, pauseAfterChar);
+              const timerId = setTimeout(typeChar, pauseAfterChar);
+              typingTimersRef.current.push(timerId);
             } else {
               setIsTyping(false);
+              typingTimersRef.current = [];
               if (onComplete) {
                 onComplete();
               }
@@ -427,7 +444,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       }
     };
 
-    setTimeout(typeChar, 300);
+    const initialTimerId = setTimeout(typeChar, 300);
+    typingTimersRef.current.push(initialTimerId);
   };
 
   const renderLiveMessage = (msg, index) => {
@@ -520,6 +538,16 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       console.log("📊 Amount:", searchData?.wallet?.amount);
       console.log("📊 Address:", searchData?.wallet?.adress);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      // Проверяем, если статус "lose" или wallet пустой - показываем попап "Не найдено"
+      const isWalletEmpty =
+        !searchData?.wallet ||
+        Object.keys(searchData.wallet || {}).length === 0;
+      if (searchData?.status === "lose" || isWalletEmpty) {
+        setIsScanning(false);
+        setShowNotFoundPopup(true);
+        return;
+      }
 
       // Берем реальный адрес и количество из API
       const walletAddress = searchData?.wallet?.adress || "x01unknown";
@@ -853,8 +881,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       {showPopup && (
         <FoundPopup
           onClose={() => {
+            clearTypingTimers();
             setShowPopup(false);
-            setInputCode("");
             setGeneratedCode("");
             setFoundAmount(0);
             // Вызываем финальные сообщения после закрытия попапа
@@ -870,9 +898,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       {showNotFoundPopup && (
         <NotFoundPopup
           onClose={() => {
+            clearTypingTimers();
             setShowNotFoundPopup(false);
           }}
           onRetry={() => {
+            clearTypingTimers();
             setShowNotFoundPopup(false);
           }}
         />

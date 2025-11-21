@@ -1,11 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./TaskPopup.module.scss";
-import { checkExternalTask, claimExternalTask, claimTask } from "../services/api";
+import {
+  checkExternalTask,
+  claimExternalTask,
+  claimTask,
+  confirmBannerView,
+} from "../services/api";
+import providerManager from "../services/adProviders/ProviderManager";
 
 const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   if (!task) return null;
 
   const [isChecking, setIsChecking] = useState(false);
+  const [isLoadingBanner, setIsLoadingBanner] = useState(false);
+  const [bannerData, setBannerData] = useState(null);
 
   // Получаем данные из API
   const apiData = task.apiData || {};
@@ -32,16 +40,16 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   // Обработчик проверки задания
   const handleCheckTask = async () => {
     if (isChecking) return;
-    
+
     setIsChecking(true);
     try {
       console.log("🔄 Проверяем задание...");
-      
+
       if (isExternal) {
         // Для внешних заданий: check -> claim
         const checkResult = await checkExternalTask(provider, task.id);
         console.log("🔍 Результат проверки внешнего задания:", checkResult);
-        
+
         // Если задание в обработке (WAITING), закрываем попап и обновляем список
         if (checkResult?.status === "WAITING") {
           console.log("⏳ Задание отправлено в обработку");
@@ -51,7 +59,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
           }
           return;
         }
-        
+
         const result = await claimExternalTask(provider, task.id);
         console.log("✅ Внешнее задание выполнено:", result);
       } else {
@@ -59,7 +67,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         const result = await claimTask(task.id);
         console.log("✅ Задание выполнено:", result);
       }
-      
+
       // Вызываем колбэк для показа toast и обновления списка
       // Колбэк сам закроет попап
       if (onTaskCompleted) {
@@ -67,7 +75,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
       }
     } catch (error) {
       console.error("❌ Ошибка проверки задания:", error);
-      
+
       // Вызываем колбэк для показа toast с ошибкой
       // Колбэк сам закроет попап
       if (onTaskFailed) {
@@ -78,10 +86,248 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     }
   };
 
+  // Обработчик для баннеров (клики и просмотры)
+  const handleBannerAction = async () => {
+    if (isLoadingBanner) return;
+
+    setIsLoadingBanner(true);
+    try {
+      // Определяем тип действия
+      const action =
+        details.action || (taskType === "banners-cpc" ? "click" : "view");
+
+      // Выбираем провайдера: сначала проверяем в данных, если нет - используем fallback
+      let preferredProvider =
+        details.banner_provider ||
+        details.provider ||
+        apiData.banner_provider ||
+        provider ||
+        viewDetails.provider;
+
+      // Логируем начало обработки
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log(
+        `🎯 БАННЕР - ${
+          preferredProvider ? preferredProvider.toUpperCase() : "AUTO"
+        }`
+      );
+      console.log(`   Задание: ${task.name} (ID: ${task.id})`);
+      console.log(
+        `   Тип: ${action === "click" ? "Клик (CPC)" : "Просмотр (CPM)"}`
+      );
+      console.log(
+        `   Прогресс: ${apiData.user_progress}/${apiData.target_progress}`
+      );
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      // Инициализируем менеджер провайдеров
+      await providerManager.initialize();
+
+      // Получаем провайдер и загружаем рекламу
+      let selectedProvider = null;
+      let adData = null;
+
+      if (preferredProvider) {
+        // Пробуем использовать предпочтительный провайдер
+        const provider = providerManager.getProvider(preferredProvider);
+        if (provider) {
+          const isAvailable = await provider.isAdAvailable();
+          if (isAvailable) {
+            selectedProvider = preferredProvider;
+            adData = await provider.loadAd();
+          }
+        }
+      }
+
+      // Если предпочтительный провайдер не доступен, используем fallback
+      if (!adData) {
+        console.log("📡 Поиск доступного провайдера...");
+
+        // Пробуем найти доступный провайдер
+        const providerList = providerManager.getProvidersForAction(action);
+        console.log(`📋 Проверяем провайдеров: ${providerList.join(", ")}`);
+
+        const checkedProviders = [];
+        for (const providerName of providerList) {
+          const provider = providerManager.getProvider(providerName);
+          if (!provider) {
+            console.log(`⚠️ Провайдер ${providerName} не найден в менеджере`);
+            checkedProviders.push({ name: providerName, status: "not_found" });
+            continue;
+          }
+
+          try {
+            console.log(`🔍 Проверяем ${providerName}...`);
+            const isAvailable = await provider.isAdAvailable();
+            checkedProviders.push({
+              name: providerName,
+              status: isAvailable ? "available" : "unavailable",
+              reason: isAvailable
+                ? "OK"
+                : "SDK не загружен или реклама недоступна",
+            });
+
+            if (isAvailable) {
+              console.log(`✅ ${providerName} доступен, загружаем рекламу...`);
+              try {
+                selectedProvider = providerName;
+                adData = await provider.loadAd();
+                console.log(`✅ Реклама успешно загружена от ${providerName}`);
+                break;
+              } catch (loadError) {
+                console.error(
+                  `❌ Ошибка загрузки рекламы от ${providerName}:`,
+                  loadError
+                );
+                checkedProviders[checkedProviders.length - 1].status =
+                  "load_error";
+                checkedProviders[checkedProviders.length - 1].reason =
+                  loadError.message;
+                adData = null;
+                selectedProvider = null;
+                continue;
+              }
+            } else {
+              console.log(`❌ ${providerName} недоступен`);
+            }
+          } catch (error) {
+            console.error(`❌ [${providerName}] Ошибка проверки:`, error);
+            checkedProviders.push({
+              name: providerName,
+              status: "error",
+              reason: error.message,
+            });
+            continue;
+          }
+        }
+
+        // Логируем результаты проверки всех провайдеров
+        console.log("📊 Результаты проверки провайдеров:", checkedProviders);
+      }
+
+      if (!adData || !selectedProvider) {
+        console.error("❌ Не удалось загрузить рекламу");
+        console.error("💡 Возможные причины:");
+        console.error("   1. SDK провайдеров не загружены в браузер");
+        console.error("   2. Нет доступной рекламы у провайдеров");
+        console.error("   3. Провайдеры не настроены (нет API ключей)");
+        console.error(
+          "💡 Решение: загрузите SDK провайдеров в index.html или через loadSDK()"
+        );
+
+        if (onTaskFailed) {
+          onTaskFailed();
+        }
+        return;
+      }
+
+      console.log(`✅ Реклама загружена от ${selectedProvider}:`);
+      console.log("Данные рекламы:", adData);
+
+      // Сохраняем данные рекламы в стейт для отображения
+      const bannerInfo = {
+        title: adData.title || "",
+        description: adData.description || "",
+        image_url: adData.image_url || "",
+        link: adData.link || "",
+        provider: selectedProvider,
+        action: action,
+        taskId: task.id,
+        adData: adData, // Сохраняем полные данные для показа
+      };
+
+      console.log("Сохраняем в state:", bannerInfo);
+      setBannerData(bannerInfo);
+    } catch (error) {
+      console.error("❌ Ошибка обработки рекламы:", error);
+      if (onTaskFailed) {
+        onTaskFailed();
+      }
+    } finally {
+      setIsLoadingBanner(false);
+    }
+  };
+
+  // Обработчик клика по загруженному баннеру
+  const handleBannerClick = async () => {
+    if (!bannerData || isLoadingBanner) return;
+
+    setIsLoadingBanner(true);
+    try {
+      // Инициализируем менеджер провайдеров
+      await providerManager.initialize();
+
+      // Получаем провайдер и показываем рекламу через него
+      const provider = providerManager.getProvider(bannerData.provider);
+      if (!provider) {
+        console.error(`❌ Провайдер ${bannerData.provider} не найден`);
+        if (onTaskFailed) {
+          onTaskFailed();
+        }
+        return;
+      }
+
+      // Используем сохраненные данные рекламы или загружаем заново
+      const adData = bannerData.adData || (await provider.loadAd());
+      console.log(`🔗 Показываем рекламу через ${bannerData.provider}...`);
+
+      const result = await provider.showAd(adData);
+
+      if (!result.success) {
+        console.error("❌ Реклама не была показана успешно:", result);
+        if (onTaskFailed) {
+          onTaskFailed();
+        }
+        return;
+      }
+
+      // Подтверждаем просмотр/клик на бэкенде
+      console.log(`\n📤 Подтверждение просмотра...`);
+      const confirmResult = await confirmBannerView(
+        bannerData.taskId,
+        bannerData.provider
+      );
+
+      // Проверяем прогресс
+      const newProgress =
+        confirmResult?.user_progress || apiData.user_progress + 1;
+      const targetProgress = apiData.target_progress || 1;
+      const isFullyCompleted = newProgress >= targetProgress;
+
+      console.log(
+        `✅ Подтверждено! Прогресс: ${newProgress}/${targetProgress} ${
+          isFullyCompleted ? "🎉 Завершено!" : "🔄 Продолжаем"
+        }`
+      );
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+      // Закрываем попап
+      onClose();
+
+      // Показываем toast об успехе
+      if (isFullyCompleted) {
+        if (onTaskCompleted) {
+          onTaskCompleted(task.id, false);
+        }
+      }
+
+      // Перезагружаем страницу заданий
+      window.dispatchEvent(new Event("bannerCompleted"));
+    } catch (error) {
+      console.error("❌ Ошибка обработки рекламы:", error);
+      if (onTaskFailed) {
+        onTaskFailed();
+      }
+    } finally {
+      setIsLoadingBanner(false);
+    }
+  };
+
   // Для баннеров
   if (isBanner) {
     const action = details.action; // "click" или "view"
-    const actionText = action === "click" ? "Кликни на баннер" : "Посмотри рекламу";
+    const actionText =
+      action === "click" ? "Кликни на баннер" : "Посмотри рекламу";
     const buttonText = action === "click" ? "Кликнуть" : "Смотреть";
 
     return (
@@ -102,28 +348,86 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
             </svg>
           </button>
 
-          <div className={styles.iconContainer}>
-            <img src={task.icon} alt={task.name} className={styles.taskIcon} />
-          </div>
+          {!bannerData ? (
+            // Показываем до загрузки баннера
+            <>
+              <div className={styles.iconContainer}>
+                <img
+                  src={task.icon}
+                  alt={task.name}
+                  className={styles.taskIcon}
+                />
+              </div>
 
-          <div className={styles.taskTitle}>{task.name}</div>
+              <div className={styles.taskTitle}>{task.name}</div>
 
-          <div className={styles.bannerDescription}>
-            {actionText} и получи <span style={{color: "#FFD700"}}>{task.energy} энергии</span>
-          </div>
+              <div className={styles.bannerDescription}>
+                {actionText} и получи{" "}
+                <span style={{ color: "#FFD700" }}>{task.energy} энергии</span>
+              </div>
 
-          <div className={styles.bannerProgress}>
-            Прогресс: {task.progress}
-          </div>
+              <div className={styles.bannerProgress}>
+                Прогресс: {task.progress}
+              </div>
 
-          <div className={styles.buttonsContainer}>
-            <button 
-              className={styles.subscribeButton}
-              style={{width: "100%"}}
-            >
-              {buttonText}
-            </button>
-          </div>
+              <div className={styles.buttonsContainer}>
+                <button
+                  className={styles.subscribeButton}
+                  style={{ width: "100%" }}
+                  onClick={handleBannerAction}
+                  disabled={isLoadingBanner}
+                >
+                  {isLoadingBanner ? "Загрузка..." : "Загрузить рекламу"}
+                </button>
+              </div>
+            </>
+          ) : (
+            // Показываем загруженный баннер
+            <>
+              <div className={styles.taskTitle}>
+                {bannerData.title || task.name}
+              </div>
+
+              {bannerData.image_url && (
+                <div style={{ width: "100%", marginBottom: "20px" }}>
+                  <img
+                    src={bannerData.image_url}
+                    alt={bannerData.title}
+                    style={{
+                      width: "100%",
+                      borderRadius: "12px",
+                      objectFit: "cover",
+                      maxHeight: "200px",
+                    }}
+                  />
+                </div>
+              )}
+
+              {bannerData.description && (
+                <div
+                  className={styles.bannerDescription}
+                  style={{ marginBottom: "20px" }}
+                >
+                  {bannerData.description}
+                </div>
+              )}
+
+              <div className={styles.bannerProgress}>
+                Прогресс: {task.progress}
+              </div>
+
+              <div className={styles.buttonsContainer}>
+                <button
+                  className={styles.subscribeButton}
+                  style={{ width: "100%" }}
+                  onClick={handleBannerClick}
+                  disabled={isLoadingBanner}
+                >
+                  {isLoadingBanner ? "Обработка..." : buttonText}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -176,15 +480,15 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         </div>
 
         <div className={styles.buttonsContainer}>
-          <button 
+          <button
             className={styles.subscribeButton}
             onClick={() => {
-              window.open(taskLink, '_blank');
+              window.open(taskLink, "_blank");
             }}
           >
             {buttonText}
           </button>
-          <button 
+          <button
             className={styles.checkButton}
             onClick={handleCheckTask}
             disabled={isChecking}

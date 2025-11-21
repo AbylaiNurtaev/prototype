@@ -33,14 +33,7 @@ export const getStartupCode = () => {
  */
 export const loginUser = async (testMode = true) => {
   const initData = getInitData();
-  const startupCode = getStartupCode() || "default"; // Если нет реферального кода - используем 'default'
-
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🔐 НАЧАЛО ЛОГИНА");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📦 InitData:", initData);
-  console.log("🔑 Startup Code:", startupCode);
-  console.log("🧪 Test Mode:", testMode);
+  const startupCode = getStartupCode() || "default";
 
   try {
     const response = await axiosInstance.post(
@@ -54,10 +47,8 @@ export const loginUser = async (testMode = true) => {
       }
     );
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     return response.data;
   } catch (error) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     throw error;
   }
 };
@@ -69,12 +60,6 @@ export const loginUser = async (testMode = true) => {
 export const getBalance = async (testMode = true) => {
   const initData = getInitData();
 
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("💰 ПОЛУЧЕНИЕ БАЛАНСА");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📦 InitData:", initData);
-  console.log("🧪 Test Mode:", testMode);
-
   try {
     const response = await axiosInstance.get("/users/balance", {
       params: {
@@ -83,10 +68,8 @@ export const getBalance = async (testMode = true) => {
       },
     });
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     return response.data;
   } catch (error) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     throw error;
   }
 };
@@ -110,12 +93,6 @@ export const getLiveFeed = async () => {
 export const getConsoleHistory = async (testMode = true) => {
   const initData = getInitData();
 
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📜 ПОЛУЧЕНИЕ ИСТОРИИ КОНСОЛИ");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("📦 InitData:", initData);
-  console.log("🧪 Test Mode:", testMode);
-
   try {
     const response = await axiosInstance.get("/console/history", {
       params: {
@@ -124,10 +101,8 @@ export const getConsoleHistory = async (testMode = true) => {
       },
     });
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     return response.data;
   } catch (error) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     throw error;
   }
 };
@@ -270,12 +245,39 @@ export const claimTask = async (taskId, testMode = true) => {
       },
     });
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(`✅ CLAIM TASK ${taskId}:`, response.data);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Подтверждение просмотра/клика рекламы
+ * @param {number} taskId - ID задания
+ * @param {string} provider - Провайдер
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const confirmBannerView = async (taskId, provider, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.post(
+      `/banners/${taskId}/${provider}`,
+      null,
+      {
+        params: {
+          initData: initData,
+          ...(testMode && { test: "true" }),
+        },
+      }
+    );
 
     return response.data;
   } catch (error) {
+    console.error(
+      `❌ Ошибка подтверждения баннера ${provider}:`,
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
