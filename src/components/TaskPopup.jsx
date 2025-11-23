@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styles from "./TaskPopup.module.scss";
 import {
   checkExternalTask,
@@ -7,6 +7,7 @@ import {
   confirmBannerView,
 } from "../services/api";
 import providerManager from "../services/adProviders/ProviderManager";
+import { useAdsgram } from "../hooks/useAdsgram";
 
 const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   if (!task) return null;
@@ -26,6 +27,66 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   const isBanner = taskType.startsWith("banners-");
   const isExternal = provider === "flyer" || provider === "subgram";
   const isSponsor = !isBanner && !isExternal;
+
+  // Обработчик успешного просмотра рекламы
+  const handleBannerReward = useCallback(async () => {
+    try {
+      // Подтверждаем просмотр/клик на бэкенде
+      const action =
+        details.action || (taskType === "banners-cpc" ? "click" : "view");
+
+      await confirmBannerView(task.id, "adsgram-cpc", false);
+
+      // Обновляем прогресс задания
+      const updatedProgress = (apiData.user_progress || 0) + 1;
+      const targetProgress = apiData.target_progress || 1;
+
+      if (updatedProgress >= targetProgress) {
+        // Задание выполнено, забираем награду
+        await claimTask(task.id, false);
+        if (onTaskCompleted) {
+          onTaskCompleted(task.id, false);
+        }
+      } else {
+        // Обновляем прогресс
+        if (onTaskCompleted) {
+          onTaskCompleted(task.id, false);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Ошибка подтверждения просмотра:", error);
+      if (onTaskFailed) {
+        onTaskFailed();
+      }
+    }
+  }, [
+    task.id,
+    taskType,
+    details.action,
+    apiData.user_progress,
+    apiData.target_progress,
+    onTaskCompleted,
+    onTaskFailed,
+  ]);
+
+  // Хук для показа Adsgram рекламы (только для баннеров)
+  const onReward = useCallback(() => {
+    console.log("✅ Реклама просмотрена успешно!");
+    // Подтверждаем просмотр на бэкенде
+    handleBannerReward();
+  }, [handleBannerReward]);
+
+  const onError = useCallback(
+    (result) => {
+      console.error("❌ Ошибка при показе рекламы:", result);
+      if (onTaskFailed) {
+        onTaskFailed();
+      }
+    },
+    [onTaskFailed]
+  );
+
+  const showAdsgramAd = useAdsgram({ blockId: "18010", onReward, onError });
 
   console.log("📋 TaskPopup - данные задания:", {
     task,
@@ -86,160 +147,19 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     }
   };
 
-  // Обработчик для баннеров (клики и просмотры)
+  // Обработчик для баннеров (клики и просмотры) - используем напрямую Adsgram
   const handleBannerAction = async () => {
     if (isLoadingBanner) return;
 
     setIsLoadingBanner(true);
     try {
-      // Определяем тип действия
-      const action =
-        details.action || (taskType === "banners-cpc" ? "click" : "view");
-
-      // Выбираем провайдера: сначала проверяем в данных, если нет - используем fallback
-      let preferredProvider =
-        details.banner_provider ||
-        details.provider ||
-        apiData.banner_provider ||
-        provider ||
-        viewDetails.provider;
-
-      // Логируем начало обработки
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log(
-        `🎯 БАННЕР - ${
-          preferredProvider ? preferredProvider.toUpperCase() : "AUTO"
-        }`
-      );
+      console.log("🎯 Показываем рекламу через Adsgram SDK");
       console.log(`   Задание: ${task.name} (ID: ${task.id})`);
-      console.log(
-        `   Тип: ${action === "click" ? "Клик (CPC)" : "Просмотр (CPM)"}`
-      );
-      console.log(
-        `   Прогресс: ${apiData.user_progress}/${apiData.target_progress}`
-      );
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      // Инициализируем менеджер провайдеров
-      await providerManager.initialize();
-
-      // Получаем провайдер и загружаем рекламу
-      let selectedProvider = null;
-      let adData = null;
-
-      if (preferredProvider) {
-        // Пробуем использовать предпочтительный провайдер
-        const provider = providerManager.getProvider(preferredProvider);
-        if (provider) {
-          const isAvailable = await provider.isAdAvailable();
-          if (isAvailable) {
-            selectedProvider = preferredProvider;
-            adData = await provider.loadAd();
-          }
-        }
-      }
-
-      // Если предпочтительный провайдер не доступен, используем fallback
-      if (!adData) {
-        console.log("📡 Поиск доступного провайдера...");
-
-        // Пробуем найти доступный провайдер
-        const providerList = providerManager.getProvidersForAction(action);
-        console.log(`📋 Проверяем провайдеров: ${providerList.join(", ")}`);
-
-        const checkedProviders = [];
-        for (const providerName of providerList) {
-          const provider = providerManager.getProvider(providerName);
-          if (!provider) {
-            console.log(`⚠️ Провайдер ${providerName} не найден в менеджере`);
-            checkedProviders.push({ name: providerName, status: "not_found" });
-            continue;
-          }
-
-          try {
-            console.log(`🔍 Проверяем ${providerName}...`);
-            const isAvailable = await provider.isAdAvailable();
-            checkedProviders.push({
-              name: providerName,
-              status: isAvailable ? "available" : "unavailable",
-              reason: isAvailable
-                ? "OK"
-                : "SDK не загружен или реклама недоступна",
-            });
-
-            if (isAvailable) {
-              console.log(`✅ ${providerName} доступен, загружаем рекламу...`);
-              try {
-                selectedProvider = providerName;
-                adData = await provider.loadAd();
-                console.log(`✅ Реклама успешно загружена от ${providerName}`);
-                break;
-              } catch (loadError) {
-                console.error(
-                  `❌ Ошибка загрузки рекламы от ${providerName}:`,
-                  loadError
-                );
-                checkedProviders[checkedProviders.length - 1].status =
-                  "load_error";
-                checkedProviders[checkedProviders.length - 1].reason =
-                  loadError.message;
-                adData = null;
-                selectedProvider = null;
-                continue;
-              }
-            } else {
-              console.log(`❌ ${providerName} недоступен`);
-            }
-          } catch (error) {
-            console.error(`❌ [${providerName}] Ошибка проверки:`, error);
-            checkedProviders.push({
-              name: providerName,
-              status: "error",
-              reason: error.message,
-            });
-            continue;
-          }
-        }
-
-        // Логируем результаты проверки всех провайдеров
-        console.log("📊 Результаты проверки провайдеров:", checkedProviders);
-      }
-
-      if (!adData || !selectedProvider) {
-        console.error("❌ Не удалось загрузить рекламу");
-        console.error("💡 Возможные причины:");
-        console.error("   1. SDK провайдеров не загружены в браузер");
-        console.error("   2. Нет доступной рекламы у провайдеров");
-        console.error("   3. Провайдеры не настроены (нет API ключей)");
-        console.error(
-          "💡 Решение: загрузите SDK провайдеров в index.html или через loadSDK()"
-        );
-
-        if (onTaskFailed) {
-          onTaskFailed();
-        }
-        return;
-      }
-
-      console.log(`✅ Реклама загружена от ${selectedProvider}:`);
-      console.log("Данные рекламы:", adData);
-
-      // Сохраняем данные рекламы в стейт для отображения
-      const bannerInfo = {
-        title: adData.title || "",
-        description: adData.description || "",
-        image_url: adData.image_url || "",
-        link: adData.link || "",
-        provider: selectedProvider,
-        action: action,
-        taskId: task.id,
-        adData: adData, // Сохраняем полные данные для показа
-      };
-
-      console.log("Сохраняем в state:", bannerInfo);
-      setBannerData(bannerInfo);
+      // Показываем рекламу напрямую через Adsgram SDK
+      await showAdsgramAd();
     } catch (error) {
-      console.error("❌ Ошибка обработки рекламы:", error);
+      console.error("❌ Ошибка показа рекламы:", error);
       if (onTaskFailed) {
         onTaskFailed();
       }
@@ -248,8 +168,28 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     }
   };
 
-  // Обработчик клика по загруженному баннеру
+  // Обработчик клика по загруженному баннеру (не используется для Adsgram, но оставляем для совместимости)
   const handleBannerClick = async () => {
+    // Для Adsgram реклама показывается сразу, этот метод не используется
+    // Но оставляем для совместимости с другими типами заданий
+    if (!bannerData || isLoadingBanner) return;
+
+    setIsLoadingBanner(true);
+    try {
+      // Для заданий с Adsgram просто показываем рекламу
+      await showAdsgramAd();
+    } catch (error) {
+      console.error("❌ Ошибка показа рекламы:", error);
+      if (onTaskFailed) {
+        onTaskFailed();
+      }
+    } finally {
+      setIsLoadingBanner(false);
+    }
+  };
+
+  // Старый метод для других провайдеров (оставляем для совместимости)
+  const handleBannerClickOld = async () => {
     if (!bannerData || isLoadingBanner) return;
 
     setIsLoadingBanner(true);
@@ -377,7 +317,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
                   onClick={handleBannerAction}
                   disabled={isLoadingBanner}
                 >
-                  {isLoadingBanner ? "Загрузка..." : "Загрузить рекламу"}
+                  {isLoadingBanner ? "Загрузка..." : "Посмотреть рекламу"}
                 </button>
               </div>
             </>

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
 import SuccessToast from "../../components/SuccessToast";
 import ErrorToast from "../../components/ErrorToast";
 import { getTasks, getExternalTasks } from "../../services/api";
+import { useAdsgram } from "../../hooks/useAdsgram";
 
 const TasksPage = ({ onPopupStateChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -12,6 +13,43 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const pageRef = useRef(null);
+
+  // Статическое задание "Посмотреть рекламу" - не зависит от API
+  const staticAdTask = {
+    id: "static-ad-task",
+    name: "Посмотреть рекламу",
+    icon: "/tasks/videotask.png",
+    energy: 10,
+    progress: "0/1",
+    isStatic: true, // Флаг что это статическое задание
+  };
+
+  // Обработчики для статического задания "Посмотреть рекламу"
+  const onAdReward = useCallback(() => {
+    console.log("✅ Реклама просмотрена успешно!");
+    setShowSuccessToast(true);
+  }, []);
+
+  const onAdError = useCallback((result) => {
+    console.error("❌ Ошибка при показе рекламы:", result);
+    setShowErrorToast(true);
+  }, []);
+
+  const showAd = useAdsgram({
+    blockId: "18010",
+    onReward: onAdReward,
+    onError: onAdError,
+  });
+
+  // Обработчик клика на статическое задание "Посмотреть рекламу"
+  const handleStaticAdTask = async () => {
+    try {
+      await showAd();
+    } catch (error) {
+      console.error("❌ Ошибка показа рекламы:", error);
+      setShowErrorToast(true);
+    }
+  };
 
   // Функция загрузки заданий
   const loadTasks = async () => {
@@ -206,6 +244,35 @@ const TasksPage = ({ onPopupStateChange }) => {
         <div className={styles.tasksTitle}>Список заданий</div>
 
         <div className={styles.tasksList}>
+          {/* Статическое задание "Посмотреть рекламу" - всегда показывается */}
+          <div key={staticAdTask.id} className={styles.taskCard}>
+            <img
+              src={staticAdTask.icon}
+              alt={staticAdTask.name}
+              className={styles.taskIcon}
+            />
+            <div className={styles.taskInfo}>
+              <div className={styles.taskName}>{staticAdTask.name}</div>
+              <div className={styles.taskRewards}>
+                <div className={styles.rewardItem}>
+                  <img src="/mine-icons/energy.svg" alt="energy" />
+                  <span>{staticAdTask.energy}</span>
+                </div>
+              </div>
+            </div>
+            <button
+              className={styles.taskButton}
+              onClick={handleStaticAdTask}
+              style={{
+                opacity: 1,
+                cursor: "pointer",
+                border: "1px solid #5264ce",
+              }}
+            >
+              Выполнить
+            </button>
+          </div>
+
           {loading ? (
             <div
               style={{ textAlign: "center", padding: "40px", color: "#888" }}
