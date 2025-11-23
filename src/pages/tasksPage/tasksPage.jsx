@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
 import SuccessToast from "../../components/SuccessToast";
 import ErrorToast from "../../components/ErrorToast";
 import { getTasks, getExternalTasks } from "../../services/api";
-import { useAdsgram } from "../../hooks/useAdsgram";
 
 const TasksPage = ({ onPopupStateChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -14,69 +13,66 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const pageRef = useRef(null);
 
-  // Статическое задание "Посмотреть рекламу" - не зависит от API
-  const staticAdTask = {
-    id: "static-ad-task",
-    name: "Посмотреть рекламу",
-    icon: "/tasks/videotask.png",
-    energy: 10,
-    progress: "0/1",
-    isStatic: true, // Флаг что это статическое задание
-  };
-
-  // Обработчики для статического задания "Посмотреть рекламу"
-  const onAdReward = useCallback(() => {
-    console.log("✅ Реклама просмотрена успешно!");
-    setShowSuccessToast(true);
-  }, []);
-
-  const onAdError = useCallback((result) => {
-    console.error("❌ Ошибка при показе рекламы:", result);
-    setShowErrorToast(true);
-  }, []);
-
-  const showAd = useAdsgram({
-    blockId: "18010",
-    onReward: onAdReward,
-    onError: onAdError,
-  });
-
-  // Обработчик клика на статическое задание "Посмотреть рекламу"
-  const handleStaticAdTask = async () => {
-    try {
-      await showAd();
-    } catch (error) {
-      console.error("❌ Ошибка показа рекламы:", error);
-      setShowErrorToast(true);
-    }
-  };
-
   // Функция загрузки заданий
   const loadTasks = async () => {
     try {
       setLoading(true);
 
-      // Загружаем все типы заданий
-      const [
-        bannersResponse,
-        sponsorsResponse,
-        subgramResponse,
-        flyerResponse,
-      ] = await Promise.all([
-        getTasks("banners"),
-        getTasks("sponsors"),
-        getExternalTasks("subgram"),
-        getExternalTasks("flyer"),
-      ]);
+      let bannerTasks = [];
+      let sponsorTasks = [];
+      let subgramTasks = [];
+      let flyerTasks = [];
 
-      // Логируем баннеры
-      console.log("🎯 БАННЕРЫ:", bannersResponse);
+      // Загружаем задания, но не падаем при ошибке API
+      try {
+        const [
+          bannersResponse,
+          sponsorsResponse,
+          subgramResponse,
+          flyerResponse,
+        ] = await Promise.all([
+          getTasks("banners").catch(() => ({ tasks: [] })),
+          getTasks("sponsors").catch(() => ({ tasks: [] })),
+          getExternalTasks("subgram").catch(() => ({ tasks: [] })),
+          getExternalTasks("flyer").catch(() => ({ tasks: [] })),
+        ]);
 
-      // Извлекаем массивы заданий
-      const bannerTasks = bannersResponse?.tasks || [];
-      const sponsorTasks = sponsorsResponse?.tasks || [];
-      const subgramTasks = subgramResponse?.tasks || [];
-      const flyerTasks = flyerResponse?.tasks || [];
+        // Логируем баннеры
+        console.log("🎯 БАННЕРЫ:", bannersResponse);
+
+        // Извлекаем массивы заданий
+        bannerTasks = bannersResponse?.tasks || [];
+        sponsorTasks = sponsorsResponse?.tasks || [];
+        subgramTasks = subgramResponse?.tasks || [];
+        flyerTasks = flyerResponse?.tasks || [];
+      } catch (error) {
+        console.error("❌ Ошибка загрузки заданий из API:", error);
+        // Продолжаем работу даже если API не загрузился
+      }
+
+      // Если нет заданий типа banners-*, добавляем fallback задание
+      const hasBannerTasks = bannerTasks.some((task) =>
+        task.type?.startsWith("banners-")
+      );
+      if (!hasBannerTasks) {
+        // Добавляем fallback задание "Посмотреть рекламу"
+        bannerTasks.push({
+          id: "fallback-ad-task",
+          type: "banners-cpm",
+          view_details: {
+            title: "Посмотреть рекламу",
+          },
+          details: {
+            action: "view",
+          },
+          rewards: {
+            coins: 10,
+          },
+          user_progress: 0,
+          target_progress: 1,
+          status: "ACTIVE",
+        });
+      }
 
       // Объединяем задания
       const allTasks = [
@@ -244,35 +240,6 @@ const TasksPage = ({ onPopupStateChange }) => {
         <div className={styles.tasksTitle}>Список заданий</div>
 
         <div className={styles.tasksList}>
-          {/* Статическое задание "Посмотреть рекламу" - всегда показывается */}
-          <div key={staticAdTask.id} className={styles.taskCard}>
-            <img
-              src={staticAdTask.icon}
-              alt={staticAdTask.name}
-              className={styles.taskIcon}
-            />
-            <div className={styles.taskInfo}>
-              <div className={styles.taskName}>{staticAdTask.name}</div>
-              <div className={styles.taskRewards}>
-                <div className={styles.rewardItem}>
-                  <img src="/mine-icons/energy.svg" alt="energy" />
-                  <span>{staticAdTask.energy}</span>
-                </div>
-              </div>
-            </div>
-            <button
-              className={styles.taskButton}
-              onClick={handleStaticAdTask}
-              style={{
-                opacity: 1,
-                cursor: "pointer",
-                border: "1px solid #5264ce",
-              }}
-            >
-              Выполнить
-            </button>
-          </div>
-
           {loading ? (
             <div
               style={{ textAlign: "center", padding: "40px", color: "#888" }}
