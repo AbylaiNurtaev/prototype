@@ -1,7 +1,15 @@
 import { useEffect, useRef } from "react";
 import styles from "./Task.module.css";
 
-export const Task = ({ debug, blockId, onReward, rewardText, buttonText, claimText, doneText }) => {
+export const Task = ({
+  debug,
+  blockId,
+  onReward,
+  rewardText,
+  buttonText,
+  claimText,
+  doneText,
+}) => {
   const taskRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -16,37 +24,13 @@ export const Task = ({ debug, blockId, onReward, rewardText, buttonText, claimTe
     adsgramElement.setAttribute("data-debug", debug || "false");
     adsgramElement.className = styles.task;
 
-    // Добавляем слоты
+    // Добавляем только reward слот (если нужен)
     if (rewardText) {
       const rewardSlot = document.createElement("span");
       rewardSlot.setAttribute("slot", "reward");
       rewardSlot.className = styles.reward;
       rewardSlot.textContent = rewardText;
       adsgramElement.appendChild(rewardSlot);
-    }
-
-    if (buttonText) {
-      const buttonSlot = document.createElement("div");
-      buttonSlot.setAttribute("slot", "button");
-      buttonSlot.className = styles.button;
-      buttonSlot.textContent = buttonText;
-      adsgramElement.appendChild(buttonSlot);
-    }
-
-    if (claimText) {
-      const claimSlot = document.createElement("div");
-      claimSlot.setAttribute("slot", "claim");
-      claimSlot.className = styles.button_claim;
-      claimSlot.textContent = claimText;
-      adsgramElement.appendChild(claimSlot);
-    }
-
-    if (doneText) {
-      const doneSlot = document.createElement("div");
-      doneSlot.setAttribute("slot", "done");
-      doneSlot.className = styles.button_done;
-      doneSlot.textContent = doneText;
-      adsgramElement.appendChild(doneSlot);
     }
 
     containerRef.current.appendChild(adsgramElement);
@@ -65,11 +49,14 @@ export const Task = ({ debug, blockId, onReward, rewardText, buttonText, claimTe
 
     return () => {
       adsgramElement.removeEventListener("reward", handler);
-      if (containerRef.current && containerRef.current.contains(adsgramElement)) {
+      if (
+        containerRef.current &&
+        containerRef.current.contains(adsgramElement)
+      ) {
         containerRef.current.removeChild(adsgramElement);
       }
     };
-  }, [blockId, debug, onReward, rewardText, buttonText, claimText, doneText]);
+  }, [blockId, debug, onReward, rewardText]);
 
   if (!customElements.get("adsgram-task")) {
     return null;
@@ -77,4 +64,3 @@ export const Task = ({ debug, blockId, onReward, rewardText, buttonText, claimTe
 
   return <div ref={containerRef} className={styles.taskContainer} />;
 };
-
