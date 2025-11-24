@@ -12,6 +12,7 @@ class ProviderManager {
     this.providers = new Map();
     this.providerConfigs = {};
     this.initialized = false;
+    this.isShowingAd = false; // Флаг для предотвращения параллельного показа рекламы
   }
 
   /**
@@ -151,148 +152,176 @@ class ProviderManager {
    * @returns {Promise<{success: boolean, cancelled: boolean, noAd: boolean, provider: string}>}
    */
   async startAdWithFallback(actionType = "view", preferredProvider = null) {
+    // КРИТИЧНО: Если реклама уже показывается, не запускаем еще одну
+    if (this.isShowingAd) {
+      console.log(
+        `[ProviderManager] ⛔ Реклама уже показывается, игнорируем новый запрос`
+      );
+      return {
+        success: false,
+        cancelled: true,
+        noAd: false,
+        provider: null,
+      };
+    }
+
     if (!this.initialized) {
       await this.initialize();
     }
 
+    // Устанавливаем флаг, что реклама показывается
+    this.isShowingAd = true;
+
     // Флаг для отслеживания успешного просмотра
     let adSuccessfullyViewed = false;
 
-    // Если указан предпочтительный провайдер, пробуем его сначала
-    if (preferredProvider) {
-      const normalizedName = this.normalizeProviderName(preferredProvider);
-      const provider = this.providers.get(normalizedName);
+    try {
+      // Если указан предпочтительный провайдер, пробуем его сначала
+      if (preferredProvider) {
+        const normalizedName = this.normalizeProviderName(preferredProvider);
+        const provider = this.providers.get(normalizedName);
 
-      if (provider) {
-        const isAvailable = await provider.isAdAvailable();
-        if (isAvailable) {
-          console.log(
-            `[ProviderManager] Используем предпочтительный провайдер: ${normalizedName}`
-          );
-          const result = await this.startAd(normalizedName);
-          // Если успешно просмотрено, останавливаемся
-          if (result.success === true) {
-            return result;
+        if (provider) {
+          const isAvailable = await provider.isAdAvailable();
+          if (isAvailable) {
+            console.log(
+              `[ProviderManager] Используем предпочтительный провайдер: ${normalizedName}`
+            );
+            const result = await this.startAd(normalizedName);
+            // Если успешно просмотрено, останавливаемся
+            if (result.success === true) {
+              return result;
+            }
           }
         }
       }
-    }
 
-    // Получаем список провайдеров для данного типа действия
-    const providerList = this.getProvidersForAction(actionType);
-    console.log(
-      `[ProviderManager] Список провайдеров для ${actionType}:`,
-      providerList
-    );
+      // Получаем список провайдеров для данного типа действия
+      const providerList = this.getProvidersForAction(actionType);
+      console.log(
+        `[ProviderManager] Список провайдеров для ${actionType}:`,
+        providerList
+      );
 
-    // Перебираем провайдеров по приоритету
-    for (const providerName of providerList) {
-      // КРИТИЧНО: Если реклама уже успешно просмотрена, НЕ проверяем следующие провайдеры
-      if (adSuccessfullyViewed) {
-        console.log(
-          `[ProviderManager] ⛔ Реклама уже просмотрена, пропускаем ${providerName}`
-        );
-        break;
-      }
-
-      const provider = this.providers.get(providerName);
-      if (!provider) {
-        console.warn(
-          `[ProviderManager] Провайдер ${providerName} не найден в списке`
-        );
-        continue;
-      }
-
-      try {
-        console.log(`[ProviderManager] Проверяем провайдер: ${providerName}`);
-        // Проверяем доступность рекламы
-        const isAvailable = await provider.isAdAvailable();
-        console.log(
-          `[ProviderManager] Провайдер ${providerName} доступен:`,
-          isAvailable
-        );
-        if (isAvailable) {
+      // Перебираем провайдеров по приоритету
+      for (const providerName of providerList) {
+        // КРИТИЧНО: Если реклама уже успешно просмотрена, НЕ проверяем следующие провайдеры
+        if (adSuccessfullyViewed) {
           console.log(
-            `[ProviderManager] Найден доступный провайдер: ${providerName}, запускаем рекламу...`
+            `[ProviderManager] ⛔ Реклама уже просмотрена, пропускаем ${providerName}`
           );
-          const result = await this.startAd(providerName);
+          break;
+        }
 
-          console.log(
-            `[ProviderManager] Результат от ${providerName}:`,
-            result
+        const provider = this.providers.get(providerName);
+        if (!provider) {
+          console.warn(
+            `[ProviderManager] Провайдер ${providerName} не найден в списке`
           );
-          console.log(
-            `[ProviderManager] result.success =`,
-            result?.success,
-            `(тип: ${typeof result?.success})`
-          );
+          continue;
+        }
 
-          // КРИТИЧНО: Если реклама успешно просмотрена, СРАЗУ останавливаемся
-          // НЕ пробуем следующие провайдеры - ВОЗВРАЩАЕМ РЕЗУЛЬТАТ НЕМЕДЛЕННО
-          if (result && result.success === true) {
+        try {
+          // КРИТИЧНО: Проверяем флаг ПЕРЕД ЛЮБЫМИ ДЕЙСТВИЯМИ
+          if (adSuccessfullyViewed) {
             console.log(
-              `[ProviderManager] ✅✅✅ РЕКЛАМА УСПЕШНО ПРОСМОТРЕНА через ${providerName}, ОСТАНАВЛИВАЕМ ПОИСК НЕМЕДЛЕННО - ВОЗВРАЩАЕМ РЕЗУЛЬТАТ`
+              `[ProviderManager] ⛔⛔⛔ РЕКЛАМА УЖЕ ПРОСМОТРЕНА, ПРЕРЫВАЕМ ЦИКЛ ДО ПРОВЕРКИ ${providerName}`
             );
-            // Устанавливаем флаг, чтобы следующие провайдеры не проверялись
-            adSuccessfullyViewed = true;
-            // Немедленно возвращаем результат - это прервет цикл for
-            const finalResult = result;
-            console.log(
-              `[ProviderManager] ВОЗВРАЩАЕМ РЕЗУЛЬТАТ И ПРЕРЫВАЕМ ЦИКЛ:`,
-              finalResult
-            );
-            return finalResult;
+            break; // Прерываем цикл немедленно
           }
 
-          // Дополнительная проверка - если success не true, продолжаем
+          console.log(`[ProviderManager] Проверяем провайдер: ${providerName}`);
+          // Проверяем доступность рекламы
+          const isAvailable = await provider.isAdAvailable();
           console.log(
-            `[ProviderManager] Реклама НЕ просмотрена через ${providerName} (success=${result?.success}), продолжаем поиск...`
+            `[ProviderManager] Провайдер ${providerName} доступен:`,
+            isAvailable
           );
+          if (isAvailable) {
+            // ЕЩЕ РАЗ проверяем флаг перед запуском рекламы
+            if (adSuccessfullyViewed) {
+              console.log(
+                `[ProviderManager] ⛔⛔⛔ РЕКЛАМА УЖЕ ПРОСМОТРЕНА, НЕ ЗАПУСКАЕМ ${providerName}`
+              );
+              break;
+            }
 
-          // Если реклама не найдена (noAd: true), пробуем следующий провайдер
-          if (result.noAd === true) {
             console.log(
-              `[ProviderManager] Провайдер ${providerName} не нашел рекламу, пробуем следующий...`
+              `[ProviderManager] Найден доступный провайдер: ${providerName}, запускаем рекламу...`
+            );
+            const result = await this.startAd(providerName);
+
+            console.log(
+              `[ProviderManager] Результат от ${providerName}:`,
+              result
+            );
+
+            // КРИТИЧНО: Если реклама успешно просмотрена, СРАЗУ останавливаемся
+            // НЕ пробуем следующие провайдеры - ВОЗВРАЩАЕМ РЕЗУЛЬТАТ НЕМЕДЛЕННО
+            if (result && result.success === true) {
+              console.log(
+                `[ProviderManager] ✅✅✅ РЕКЛАМА УСПЕШНО ПРОСМОТРЕНА через ${providerName}, ОСТАНАВЛИВАЕМ ПОИСК НЕМЕДЛЕННО`
+              );
+              // Устанавливаем флаг, чтобы следующие провайдеры не проверялись
+              adSuccessfullyViewed = true;
+              // Немедленно возвращаем результат - это прервет цикл for и функцию
+              const finalResult = { ...result, provider: providerName };
+              console.log(
+                `[ProviderManager] ВОЗВРАЩАЕМ РЕЗУЛЬТАТ И ПРЕРЫВАЕМ ВСЕ:`,
+                finalResult
+              );
+              return finalResult; // ЭТО ДОЛЖНО ПРЕРВАТЬ ЦИКЛ И ФУНКЦИЮ
+            }
+
+            // Если реклама не найдена (noAd: true), пробуем следующий провайдер
+            if (result && result.noAd === true) {
+              console.log(
+                `[ProviderManager] Провайдер ${providerName} не нашел рекламу, пробуем следующий...`
+              );
+              continue; // Переходим к следующему провайдеру
+            }
+
+            // Если была отмена пользователем, тоже пробуем следующий провайдер
+            if (result && result.cancelled === true) {
+              console.log(
+                `[ProviderManager] Пользователь отменил просмотр через ${providerName}, пробуем следующий...`
+              );
+              continue; // Переходим к следующему провайдеру
+            }
+
+            // Для других ошибок пробуем следующий провайдер
+            console.log(
+              `[ProviderManager] Неизвестный результат от ${providerName}, пробуем следующий...`,
+              result
             );
             continue; // Переходим к следующему провайдеру
-          }
-
-          // Если была отмена пользователем, тоже пробуем следующий провайдер
-          if (result.cancelled === true) {
+          } else {
             console.log(
-              `[ProviderManager] Пользователь отменил просмотр через ${providerName}, пробуем следующий...`
+              `[ProviderManager] Провайдер ${providerName} недоступен, пробуем следующий...`
             );
-            continue; // Переходим к следующему провайдеру
           }
-
-          // Для других ошибок пробуем следующий провайдер
-          console.log(
-            `[ProviderManager] Неизвестный результат от ${providerName}, пробуем следующий...`,
-            result
+        } catch (error) {
+          console.error(
+            `[ProviderManager] Ошибка проверки провайдера ${providerName}:`,
+            error
           );
           continue; // Переходим к следующему провайдеру
-        } else {
-          console.log(
-            `[ProviderManager] Провайдер ${providerName} недоступен, пробуем следующий...`
-          );
         }
-      } catch (error) {
-        console.error(
-          `[ProviderManager] Ошибка проверки провайдера ${providerName}:`,
-          error
-        );
-        continue; // Переходим к следующему провайдеру
       }
-    }
 
-    // Если ни один провайдер не доступен
-    console.warn("[ProviderManager] Нет доступных провайдеров");
-    return {
-      success: false,
-      cancelled: false,
-      noAd: true,
-      provider: null,
-    };
+      // Если ни один провайдер не доступен
+      console.warn("[ProviderManager] Нет доступных провайдеров");
+      return {
+        success: false,
+        cancelled: false,
+        noAd: true,
+        provider: null,
+      };
+    } finally {
+      // Сбрасываем флаг после завершения (успешного или нет)
+      this.isShowingAd = false;
+      console.log("[ProviderManager] Сброшен флаг isShowingAd");
+    }
   }
 
   /**
