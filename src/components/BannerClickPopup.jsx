@@ -23,19 +23,6 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
           </svg>
         </button>
 
-        <div className={styles.iconContainer}>
-          <img src={task.icon} alt={task.name} className={styles.taskIcon} />
-        </div>
-
-        <div className={styles.taskTitle}>{task.name}</div>
-
-        <div className={styles.bannerDescription}>
-          Кликни на баннер и получи{" "}
-          <span style={{ color: "#FFD700" }}>{task.energy} энергии</span>
-        </div>
-
-        <div className={styles.bannerProgress}>Прогресс: {task.progress}</div>
-
         <div className={styles.taskContainer}>
           <Task
             blockId="task-18088"

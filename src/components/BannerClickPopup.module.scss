@@ -14,16 +14,15 @@
 
 .popup {
   border-radius: 25px 25px 0 0;
-  padding: 60px 25px 20px;
+  padding: 50px 20px 30px;
   width: 100%;
   max-width: 100%;
-  min-height: 552px;
   background: #1b1b1b;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -50,6 +49,11 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
+  transition: opacity 0.2s;
+  
+  &:hover {
+    opacity: 0.7;
+  }
   
   svg {
     width: 24px;
@@ -57,57 +61,12 @@
   }
 }
 
-.iconContainer {
-  border-radius: 25px;
-  width: 100px;
-  height: 100px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #2a2a2a;
-}
-
-.taskIcon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.taskTitle {
-  font-family: "Manrope", sans-serif;
-  font-weight: 700;
-  font-size: 22px;
-  line-height: 130%;
-  text-align: center;
-  color: #fff;
-}
-
-.bannerDescription {
-  font-family: "Manrope", sans-serif;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 150%;
-  text-align: center;
-  color: #fff;
-  margin-top: 10px;
-}
-
-.bannerProgress {
-  font-family: "Manrope", sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  text-align: center;
-  color: #888;
-  margin-top: 5px;
-}
-
 .taskContainer {
   width: 100%;
+  max-width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   flex: 1;
-  min-height: 200px;
 }
 
