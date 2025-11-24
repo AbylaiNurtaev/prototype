@@ -126,13 +126,19 @@ class Adextra extends Provider {
       this.displayPromise = { resolve };
 
       try {
-        // Определяем колбэки
+        const placementId = this.config.placementId;
+
+        // Определяем колбэки для обработки событий
         const onSuccess = () => {
-          console.log("[Adextra] Реклама показана успешно");
+          console.log("[Adextra] ✅ Реклама показана успешно", { placementId });
+
+          // Отправляем beacon на бэкенд о том, что реклама показана
+          // (опционально, если нужно отслеживать на бэкенде)
+          // fetch(`https://example.com/beacon/showed/${placementId}`).catch(() => {});
+
           if (this.displayPromise) {
             // Для CPM минимальное время просмотра
             const minViewTime = 5000;
-            let viewStartTime = Date.now();
 
             // Реклама показана, ждем минимальное время просмотра
             setTimeout(() => {
@@ -149,7 +155,14 @@ class Adextra extends Provider {
         };
 
         const onError = () => {
-          console.warn("[Adextra] Ошибка при показе рекламы");
+          console.warn("[Adextra] ❌ Ошибка при показе рекламы", {
+            placementId,
+          });
+
+          // Отправляем beacon на бэкенд об ошибке
+          // (опционально, если нужно отслеживать на бэкенде)
+          // fetch(`https://example.com/beacon/error/${placementId}`).catch(() => {});
+
           if (this.displayPromise) {
             this.displayPromise.resolve({
               success: false,
