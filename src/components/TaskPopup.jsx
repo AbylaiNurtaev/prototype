@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import styles from "./TaskPopup.module.scss";
 import {
   checkExternalTask,
@@ -7,7 +7,6 @@ import {
   confirmBannerView,
 } from "../services/api";
 import providerManager from "../services/adProviders/ProviderManager";
-import { useAdsgram } from "../hooks/useAdsgram";
 
 const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   if (!task) return null;
@@ -15,6 +14,8 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   const [isChecking, setIsChecking] = useState(false);
   const [isLoadingBanner, setIsLoadingBanner] = useState(false);
   const [bannerData, setBannerData] = useState(null);
+  const adsgramTaskRef = useRef(null);
+  const adsgramContainerRef = useRef(null);
 
   // Получаем данные из API
   const apiData = task.apiData || {};
@@ -69,24 +70,49 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     onTaskFailed,
   ]);
 
-  // Хук для показа Adsgram рекламы (только для баннеров)
-  const onReward = useCallback(() => {
-    console.log("✅ Реклама просмотрена успешно!");
-    // Подтверждаем просмотр на бэкенде
-    handleBannerReward();
-  }, [handleBannerReward]);
+  // Инициализация компонента adsgram-task
+  useEffect(() => {
+    if (!isBanner || !adsgramContainerRef.current) return;
 
-  const onError = useCallback(
-    (result) => {
-      console.error("❌ Ошибка при показе рекламы:", result);
+    const container = adsgramContainerRef.current;
+
+    // Создаем элемент adsgram-task
+    const adsgramElement = document.createElement("adsgram-task");
+    adsgramElement.setAttribute("data-block-id", "task-18088");
+    adsgramElement.setAttribute("data-debug", "true");
+    adsgramElement.setAttribute("data-debug-console", "false");
+    adsgramElement.className = "task";
+    adsgramElement.style.display = "none";
+
+    container.appendChild(adsgramElement);
+    adsgramTaskRef.current = adsgramElement;
+
+    // Обработчик успешного просмотра рекламы
+    const handleReward = () => {
+      console.log("✅ Реклама просмотрена успешно!");
+      handleBannerReward();
+    };
+
+    // Обработчик ошибки
+    const handleError = (event) => {
+      console.error("❌ Ошибка при показе рекламы:", event.detail);
       if (onTaskFailed) {
         onTaskFailed();
       }
-    },
-    [onTaskFailed]
-  );
+    };
 
-  const showAdsgramAd = useAdsgram({ blockId: "18010", onReward, onError });
+    // Подписываемся на события
+    adsgramElement.addEventListener("adsgram:reward", handleReward);
+    adsgramElement.addEventListener("adsgram:error", handleError);
+
+    return () => {
+      adsgramElement.removeEventListener("adsgram:reward", handleReward);
+      adsgramElement.removeEventListener("adsgram:error", handleError);
+      if (container.contains(adsgramElement)) {
+        container.removeChild(adsgramElement);
+      }
+    };
+  }, [isBanner, handleBannerReward, onTaskFailed]);
 
   console.log("📋 TaskPopup - данные задания:", {
     task,
@@ -147,17 +173,31 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     }
   };
 
-  // Обработчик для баннеров (клики и просмотры) - используем напрямую Adsgram
+  // Обработчик для баннеров (клики и просмотры) - используем компонент adsgram-task
   const handleBannerAction = async () => {
-    if (isLoadingBanner) return;
+    if (isLoadingBanner || !adsgramTaskRef.current) return;
 
     setIsLoadingBanner(true);
     try {
-      console.log("🎯 Показываем рекламу через Adsgram SDK");
+      console.log("🎯 Показываем рекламу через Adsgram компонент");
       console.log(`   Задание: ${task.name} (ID: ${task.id})`);
 
-      // Показываем рекламу напрямую через Adsgram SDK
-      await showAdsgramAd();
+      // Запускаем показ рекламы через компонент adsgram-task
+      const adsgramElement = adsgramTaskRef.current;
+
+      // Пробуем разные способы запуска рекламы
+      if (adsgramElement && typeof adsgramElement.show === "function") {
+        await adsgramElement.show();
+      } else if (adsgramElement && typeof adsgramElement.click === "function") {
+        adsgramElement.click();
+      } else {
+        // Если методы не доступны, создаем событие
+        const clickEvent = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+        });
+        adsgramElement.dispatchEvent(clickEvent);
+      }
     } catch (error) {
       console.error("❌ Ошибка показа рекламы:", error);
       if (onTaskFailed) {
@@ -265,7 +305,9 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
   // Для баннеров
   if (isBanner) {
-    const action = details.action; // "click" или "view"
+    // Определяем action: из details или из типа задания
+    const action =
+      details.action || (taskType === "banners-cpc" ? "click" : "view");
     const actionText =
       action === "click" ? "Кликни на баннер" : "Посмотри рекламу";
     const buttonText = action === "click" ? "Кликнуть" : "Смотреть";
@@ -288,86 +330,36 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
             </svg>
           </button>
 
-          {!bannerData ? (
-            // Показываем до загрузки баннера
-            <>
-              <div className={styles.iconContainer}>
-                <img
-                  src={task.icon}
-                  alt={task.name}
-                  className={styles.taskIcon}
-                />
-              </div>
+          <div className={styles.iconContainer}>
+            <img src={task.icon} alt={task.name} className={styles.taskIcon} />
+          </div>
 
-              <div className={styles.taskTitle}>{task.name}</div>
+          <div className={styles.taskTitle}>{task.name}</div>
 
-              <div className={styles.bannerDescription}>
-                {actionText} и получи{" "}
-                <span style={{ color: "#FFD700" }}>{task.energy} энергии</span>
-              </div>
+          <div className={styles.bannerDescription}>
+            {actionText} и получи{" "}
+            <span style={{ color: "#FFD700" }}>{task.energy} энергии</span>
+          </div>
 
-              <div className={styles.bannerProgress}>
-                Прогресс: {task.progress}
-              </div>
+          <div className={styles.bannerProgress}>Прогресс: {task.progress}</div>
 
-              <div className={styles.buttonsContainer}>
-                <button
-                  className={styles.subscribeButton}
-                  style={{ width: "100%" }}
-                  onClick={handleBannerAction}
-                  disabled={isLoadingBanner}
-                >
-                  {isLoadingBanner ? "Загрузка..." : "Посмотреть рекламу"}
-                </button>
-              </div>
-            </>
-          ) : (
-            // Показываем загруженный баннер
-            <>
-              <div className={styles.taskTitle}>
-                {bannerData.title || task.name}
-              </div>
+          {/* Контейнер для компонента adsgram-task */}
+          <div ref={adsgramContainerRef} style={{ display: "none" }} />
 
-              {bannerData.image_url && (
-                <div style={{ width: "100%", marginBottom: "20px" }}>
-                  <img
-                    src={bannerData.image_url}
-                    alt={bannerData.title}
-                    style={{
-                      width: "100%",
-                      borderRadius: "12px",
-                      objectFit: "cover",
-                      maxHeight: "200px",
-                    }}
-                  />
-                </div>
-              )}
-
-              {bannerData.description && (
-                <div
-                  className={styles.bannerDescription}
-                  style={{ marginBottom: "20px" }}
-                >
-                  {bannerData.description}
-                </div>
-              )}
-
-              <div className={styles.bannerProgress}>
-                Прогресс: {task.progress}
-              </div>
-
-              <div className={styles.buttonsContainer}>
-                <button
-                  className={styles.subscribeButton}
-                  style={{ width: "100%" }}
-                  onClick={handleBannerClick}
-                  disabled={isLoadingBanner}
-                >
-                  {isLoadingBanner ? "Обработка..." : buttonText}
-                </button>
-              </div>
-            </>
-          )}
+          <div className={styles.buttonsContainer}>
+            <button
+              className={styles.subscribeButton}
+              style={{ width: "100%" }}
+              onClick={handleBannerAction}
+              disabled={isLoadingBanner}
+            >
+              {isLoadingBanner
+                ? "Загрузка..."
+                : action === "click"
+                ? "Кликнуть на баннер"
+                : "Посмотреть рекламу"}
+            </button>
+          </div>
         </div>
       </div>
     );
