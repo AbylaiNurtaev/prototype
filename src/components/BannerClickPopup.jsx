@@ -11,33 +11,36 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
-    // Проверяем доступность провайдеров по приоритету
+    // Ускоряем проверку провайдеров - проверяем параллельно
     const checkProviders = async () => {
       await providerManager.initialize();
 
-      // Проверяем Barza первым
-      const barzaProvider = providerManager.getProvider("barza");
-      if (barzaProvider) {
-        const isBarzaAvailable = await barzaProvider.isAdAvailable();
-        if (isBarzaAvailable) {
-          console.log("[BannerClickPopup] Barza доступен, показываем его");
-          setCurrentProvider("barza");
-          return;
-        }
+      // Ускоряем проверку - проверяем все провайдеры параллельно
+      const [barzaProvider, tadsProvider] = await Promise.all([
+        providerManager.getProvider("barza"),
+        providerManager.getProvider("tads"),
+      ]);
+
+      // Проверяем доступность параллельно
+      const [isBarzaAvailable, isTadsAvailable] = await Promise.all([
+        barzaProvider ? barzaProvider.isAdAvailable() : Promise.resolve(false),
+        tadsProvider ? tadsProvider.isAdAvailable() : Promise.resolve(false),
+      ]);
+
+      // Выбираем первый доступный по приоритету
+      if (isBarzaAvailable) {
+        console.log("[BannerClickPopup] Barza доступен, показываем его");
+        setCurrentProvider("barza");
+        return;
       }
 
-      // Если Barza недоступен, пробуем Tads
-      const tadsProvider = providerManager.getProvider("tads");
-      if (tadsProvider) {
-        const isTadsAvailable = await tadsProvider.isAdAvailable();
-        if (isTadsAvailable) {
-          console.log("[BannerClickPopup] Tads доступен, показываем его");
-          setCurrentProvider("tads");
-          return;
-        }
+      if (isTadsAvailable) {
+        console.log("[BannerClickPopup] Tads доступен, показываем его");
+        setCurrentProvider("tads");
+        return;
       }
 
-      // Если Tads недоступен, используем Adsgram
+      // Если ни Barza, ни Tads недоступны, используем Adsgram
       console.log("[BannerClickPopup] Используем Adsgram как fallback");
       setCurrentProvider("adsgram-cpc");
     };

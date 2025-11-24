@@ -71,7 +71,7 @@ const LeaderPopup = ({ leader, onClose }) => {
               <div className={styles.modalBalanceDivider}></div>
               <div className={styles.modalBalanceItem}>
                 <img
-                  src="/mine-icons/energy.svg"
+                  src="/mine-icons/energy.png"
                   alt="energy"
                   className={styles.modalBalanceIcon}
                 />

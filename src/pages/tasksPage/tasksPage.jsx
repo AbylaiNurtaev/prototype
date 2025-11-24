@@ -383,7 +383,7 @@ const TasksPage = ({ onPopupStateChange }) => {
                   <div className={styles.taskName}>{task.name}</div>
                   <div className={styles.taskRewards}>
                     <div className={styles.rewardItem}>
-                      <img src="/mine-icons/energy.svg" alt="energy" />
+                      <img src="/mine-icons/energy.png" alt="energy" />
                       <span>{task.energy}</span>
                     </div>
                     {/* Показываем прогресс только для баннеров */}

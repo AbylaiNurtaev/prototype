@@ -539,13 +539,80 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
       console.log("📊 Address:", searchData?.wallet?.adress);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      // Проверяем, если статус "lose" или wallet пустой - показываем попап "Не найдено"
+      // Проверяем, если статус "lose" или wallet пустой - генерируем рандомный код и показываем попап "Не найдено"
       const isWalletEmpty =
         !searchData?.wallet ||
         Object.keys(searchData.wallet || {}).length === 0;
       if (searchData?.status === "lose" || isWalletEmpty) {
-        setIsScanning(false);
-        setShowNotFoundPopup(true);
+        // Генерируем рандомный адрес для анимации
+        const generateRandomAddress = () => {
+          const chars = "0123456789abcdef";
+          const prefix = "x0";
+          let address = prefix;
+          for (let i = 0; i < 10; i++) {
+            address += chars[Math.floor(Math.random() * chars.length)];
+          }
+          return address;
+        };
+        
+        const randomAddress = generateRandomAddress();
+        setGeneratedCode(randomAddress);
+        setFoundAmount(0);
+        
+        // Запускаем анимацию подбора рандомного кода
+        const prepMessages = ["[SCAN] Подключение к узлам..."];
+        let messageIndex = 0;
+        const addPrepMessage = () => {
+          if (messageIndex < prepMessages.length) {
+            setTerminalLogs((prev) => [prepMessages[messageIndex], ...prev]);
+            messageIndex++;
+            setTimeout(addPrepMessage, 500);
+          } else {
+            setTerminalLogs((prev) => [
+              `[NET] Синхронизация узлов ${getProgressBar(0)}`,
+              ...prev,
+            ]);
+
+            const progressSteps = [0, 13, 28, 35, 50, 69, 72, 96, 100];
+            let progressIndex = 0;
+            const progressStepDuration = 400;
+            const totalSyncDuration = progressSteps.length * progressStepDuration;
+
+            // Запускаем подбор рандомного кода
+            setTimeout(() => {
+              typeCode(randomAddress, totalSyncDuration, () => {
+                // Подбор завершён, показываем попап "Не найдено"
+                setIsScanning(false);
+                setShowNotFoundPopup(true);
+              });
+            }, 300);
+
+            const updateProgress = () => {
+              if (progressIndex < progressSteps.length) {
+                const currentPercent = progressSteps[progressIndex];
+                setTerminalLogs((prev) => {
+                  const newLogs = [...prev];
+                  const netLineIndex = newLogs.findIndex(
+                    (log) =>
+                      log &&
+                      typeof log === "string" &&
+                      log.startsWith("[NET] Синхронизация узлов")
+                  );
+                  if (netLineIndex !== -1) {
+                    newLogs[netLineIndex] = `[NET] Синхронизация узлов ${getProgressBar(
+                      currentPercent
+                    )}`;
+                  }
+                  return newLogs;
+                });
+                progressIndex++;
+                setTimeout(updateProgress, progressStepDuration);
+              }
+            };
+            updateProgress();
+          }
+        };
+        addPrepMessage();
         return;
       }
 
@@ -707,7 +774,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             <div className={styles.balanceDivider}></div>
             <div className={styles.balanceItem}>
               <img
-                src="/mine-icons/energy.svg"
+                src="/mine-icons/energy.png"
                 alt="energy"
                 className={styles.balanceIcon}
               />

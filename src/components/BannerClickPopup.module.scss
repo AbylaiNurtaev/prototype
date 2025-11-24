@@ -68,5 +68,10 @@
   justify-content: center;
   align-items: center;
   flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
 }
 

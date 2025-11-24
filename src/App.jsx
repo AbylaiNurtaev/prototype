@@ -21,7 +21,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
-  
+
   // Хуки должны быть в самом начале, до любых условных return
   const location = useLocation();
   const navigate = useNavigate();
@@ -174,27 +174,27 @@ function App() {
       <div style={{ display: currentPath === "/leaders" ? "block" : "none" }}>
         <LeadersPage onPopupStateChange={setIsLeaderPopupOpen} />
       </div>
-      
+
       <div style={{ display: currentPath === "/tasks" ? "block" : "none" }}>
         <TasksPage onPopupStateChange={setIsTaskPopupOpen} />
       </div>
-      
+
       <div style={{ display: currentPath === "/mining" ? "block" : "none" }}>
         <MiningPage showPopup={showPopup} setShowPopup={setShowPopup} />
       </div>
-      
+
       <div style={{ display: currentPath === "/exchange" ? "block" : "none" }}>
         <ExchangePage onInputFocus={setIsInputFocused} />
       </div>
-      
+
       <div style={{ display: currentPath === "/profile" ? "block" : "none" }}>
         <ProfilePage userData={userData} />
       </div>
-      
+
       <div style={{ display: currentPath === "/friends" ? "block" : "none" }}>
         <FriendsPage />
       </div>
-      
+
       <BottomNavigation
         showPopup={showPopup}
         isInputFocused={isInputFocused}

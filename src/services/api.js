@@ -281,3 +281,58 @@ export const confirmBannerView = async (taskId, provider, testMode = true) => {
     throw error;
   }
 };
+
+/**
+ * Получение курса обмена (сколько стоит 1 USDT к игровой валюте)
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getExchangeRate = async (testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.get("/users/exchange-rate", {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      "❌ Ошибка получения курса обмена:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+/**
+ * Вывод средств (обмен игровой валюты на USDT)
+ * @param {number} amount - Сумма в игровой валюте (BTC)
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const withdrawFunds = async (amount, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    const response = await axiosInstance.post(
+      "/users/withdraws",
+      { amount },
+      {
+        params: {
+          initData: initData,
+          ...(testMode && { test: "true" }),
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      "❌ Ошибка вывода средств:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};

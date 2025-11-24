@@ -1,13 +1,54 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./exchangePage.module.scss";
+import { getExchangeRate, withdrawFunds } from "../../services/api";
 
 const ExchangePage = ({ onInputFocus }) => {
-  const RATE_BTC_TO_USDT = 0.00012; // 100 BTC = 0.012 USDT
+  const [exchangeRate, setExchangeRate] = useState(0.012); // Курс обмена (1 BTC = X USDT)
   const [btcValue, setBtcValue] = useState("");
   const [usdtValue, setUsdtValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const btcRef = useRef(null);
   const usdtRef = useRef(null);
+
+  // Загружаем курс обмена при монтировании
+  useEffect(() => {
+    const loadExchangeRate = async () => {
+      try {
+        console.log("🔄 Загружаем курс обмена из API...");
+        const rateData = await getExchangeRate();
+        console.log("📊 Ответ от /api/users/exchange-rate:", rateData);
+        
+        // Парсим курс из ответа API
+        let rate = 0.012; // Значение по умолчанию
+        
+        if (rateData?.rate) {
+          rate = parseFloat(rateData.rate);
+        } else if (rateData?.exchange_rate) {
+          rate = parseFloat(rateData.exchange_rate);
+        } else if (rateData?.usdt_rate) {
+          rate = parseFloat(rateData.usdt_rate);
+        } else if (typeof rateData === "number") {
+          rate = rateData;
+        } else if (rateData && typeof rateData === "object") {
+          // Пробуем найти числовое значение в объекте
+          const values = Object.values(rateData).filter(v => typeof v === "number");
+          if (values.length > 0) {
+            rate = values[0];
+          }
+        }
+        
+        console.log(`✅ Установлен курс обмена: 1 BTC = ${rate} USDT`);
+        setExchangeRate(rate);
+      } catch (error) {
+        console.error("❌ Ошибка загрузки курса обмена:", error);
+        console.log("⚠️ Используем значение по умолчанию: 0.012");
+        // Используем значение по умолчанию при ошибке
+        setExchangeRate(0.012);
+      }
+    };
+    loadExchangeRate();
+  }, []);
 
   const parseNumber = (raw) => {
     if (raw === "" || raw === null || typeof raw === "undefined") return null;
@@ -24,8 +65,8 @@ const ExchangePage = ({ onInputFocus }) => {
       setUsdtValue("");
       return;
     }
-    setUsdtValue((num * RATE_BTC_TO_USDT).toFixed(6));
-  }, []);
+    setUsdtValue((num * exchangeRate).toFixed(6));
+  }, [exchangeRate]);
 
   const handleUsdtChange = useCallback((e) => {
     const raw = e.target.value;
@@ -35,8 +76,31 @@ const ExchangePage = ({ onInputFocus }) => {
       setBtcValue("");
       return;
     }
-    setBtcValue((num / RATE_BTC_TO_USDT).toFixed(6));
-  }, []);
+    setBtcValue((num / exchangeRate).toFixed(6));
+  }, [exchangeRate]);
+
+  const handleWithdraw = useCallback(async () => {
+    const num = parseNumber(btcValue);
+    if (num === null || num <= 0) {
+      alert("Введите корректную сумму для вывода");
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      const result = await withdrawFunds(num);
+      console.log("✅ Вывод успешен:", result);
+      // Очищаем поля после успешного вывода
+      setBtcValue("");
+      setUsdtValue("");
+      alert("Запрос на вывод отправлен успешно!");
+    } catch (error) {
+      console.error("❌ Ошибка вывода:", error);
+      alert("Ошибка при выводе средств. Попробуйте позже.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  }, [btcValue]);
 
   const handleFocus = useCallback(() => {
     setIsInputFocused(true);
@@ -130,7 +194,13 @@ const ExchangePage = ({ onInputFocus }) => {
           </div>
         </div>
 
-        <button className={styles.withdrawButton}>Вывод</button>
+        <button 
+          className={styles.withdrawButton} 
+          onClick={handleWithdraw}
+          disabled={isWithdrawing || !btcValue || parseNumber(btcValue) <= 0}
+        >
+          {isWithdrawing ? "Обработка..." : "Вывод"}
+        </button>
 
         <div className={styles.rateContainer}>
           <p className={styles.rateLabel}>Текущий курс вывода:</p>
@@ -140,14 +210,14 @@ const ExchangePage = ({ onInputFocus }) => {
               src="/exchange/btc.svg"
               alt="BTC"
             />
-            <span>100</span>
+            <span>1</span>
             <span>=</span>
             <img
               className={styles.rateIcon}
               src="/exchange/usdt.png"
               alt="USDT"
             />
-            <span>0.012 $</span>
+            <span>{exchangeRate.toFixed(6)} $</span>
           </div>
         </div>
       </div>
