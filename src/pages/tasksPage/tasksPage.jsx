@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
 import SuccessToast from "../../components/SuccessToast";
 import ErrorToast from "../../components/ErrorToast";
-import { getTasks, getExternalTasks } from "../../services/api";
+import { Task } from "../../components/Task";
+import {
+  getTasks,
+  getExternalTasks,
+  confirmBannerView,
+  claimTask,
+} from "../../services/api";
+import { useAdsgram } from "../../hooks/useAdsgram";
 
 const TasksPage = ({ onPopupStateChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -12,8 +19,9 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const pageRef = useRef(null);
+  const [activeCPCTask, setActiveCPCTask] = useState(null); // Для отслеживания активного CPC задания
 
-  // Функция загрузки заданий
+  // Функция загрузки заданий (нужна для handleBannerReward)
   const loadTasks = async () => {
     try {
       setLoading(true);
@@ -136,6 +144,79 @@ const TasksPage = ({ onPopupStateChange }) => {
       setLoading(false);
     }
   };
+
+  // Обработчик успешного просмотра рекламы для заданий типа banners-*
+  const handleBannerReward = useCallback(async (task) => {
+    try {
+      await confirmBannerView(task.id, "adsgram-cpc", false);
+
+      const updatedProgress = (task.apiData?.user_progress || 0) + 1;
+      const targetProgress = task.apiData?.target_progress || 1;
+
+      if (updatedProgress >= targetProgress) {
+        await claimTask(task.id, false);
+      }
+
+      // Перезагружаем задания
+      loadTasks();
+      setShowSuccessToast(true);
+    } catch (error) {
+      console.error("❌ Ошибка подтверждения просмотра:", error);
+      setShowErrorToast(true);
+    }
+  }, []);
+
+  // Хук для показа Adsgram рекламы
+  const onAdReward = useCallback(
+    (task) => {
+      console.log("✅ Реклама просмотрена успешно!");
+      handleBannerReward(task);
+    },
+    [handleBannerReward]
+  );
+
+  const onAdError = useCallback((result) => {
+    console.error("❌ Ошибка при показе рекламы:", result);
+    setShowErrorToast(true);
+  }, []);
+
+  // Обработчик клика на задание типа banners-* - показываем рекламу сразу
+  const handleBannerTaskClick = useCallback(
+    async (task) => {
+      try {
+        if (!window.Adsgram) {
+          console.error("❌ Adsgram SDK не загружен");
+          setShowErrorToast(true);
+          return;
+        }
+
+        // Инициализируем Adsgram
+        const adController = window.Adsgram.init({ blockId: "18088" });
+
+        if (!adController) {
+          console.error("❌ Не удалось инициализировать Adsgram");
+          setShowErrorToast(true);
+          return;
+        }
+
+        // Показываем рекламу
+        await adController
+          .show()
+          .then(() => {
+            // Реклама просмотрена успешно
+            onAdReward(task);
+          })
+          .catch((result) => {
+            // Ошибка при показе рекламы
+            onAdError(result);
+          });
+      } catch (error) {
+        console.error("❌ Ошибка показа рекламы:", error);
+        setShowErrorToast(true);
+      }
+    },
+    [onAdReward, onAdError]
+  );
 
   // Загрузка заданий из API при монтировании и при повторном посещении страницы
   useEffect(() => {
@@ -288,68 +369,98 @@ const TasksPage = ({ onPopupStateChange }) => {
                     )}
                   </div>
                 </div>
-                <button
-                  className={styles.taskButton}
-                  onClick={() => {
-                    // Проверяем, достигнут ли прогресс
-                    const isCompleted =
-                      task.apiData?.user_progress >=
-                      task.apiData?.target_progress;
+                {/* Для CPC заданий показываем компонент Task после клика на "Выполнить" */}
+                {task.apiData?.type === "banners-cpc" &&
+                activeCPCTask === task.id ? (
+                  <Task
+                    blockId="task-18088"
+                    debug="true"
+                    onReward={(detail) => {
+                      console.log("✅ CPC задание выполнено:", detail);
+                      onAdReward(task);
+                      setActiveCPCTask(null);
+                    }}
+                    rewardText={`${task.energy} энергии`}
+                    buttonText="Кликнуть на баннер"
+                    claimText="Забрать награду"
+                    doneText="Выполнено"
+                  />
+                ) : (
+                  <button
+                    className={styles.taskButton}
+                    onClick={() => {
+                      // Проверяем, достигнут ли прогресс
+                      const isCompleted =
+                        task.apiData?.user_progress >=
+                        task.apiData?.target_progress;
 
-                    if (
-                      !isCompleted &&
-                      task.apiData?.status !== "CLAIMED" &&
-                      task.apiData?.status !== "WAITING"
-                    ) {
-                      setSelectedTask(task);
-                      onPopupStateChange?.(true);
-                    }
-                  }}
-                  disabled={
-                    task.apiData?.user_progress >=
-                      task.apiData?.target_progress ||
-                    task.apiData?.status === "CLAIMED" ||
-                    task.apiData?.status === "WAITING"
-                  }
-                  style={{
-                    opacity:
-                      task.apiData?.user_progress >=
-                        task.apiData?.target_progress ||
-                      task.apiData?.status === "CLAIMED"
-                        ? 0.5
-                        : 1,
-                    cursor:
+                      if (
+                        !isCompleted &&
+                        task.apiData?.status !== "CLAIMED" &&
+                        task.apiData?.status !== "WAITING"
+                      ) {
+                        // Для CPC заданий показываем компонент Task
+                        if (task.apiData?.type === "banners-cpc") {
+                          setActiveCPCTask(task.id);
+                        }
+                        // Для CPM заданий показываем рекламу сразу
+                        else if (task.apiData?.type === "banners-cpm") {
+                          handleBannerTaskClick(task);
+                        }
+                        // Для других заданий открываем попап
+                        else {
+                          setSelectedTask(task);
+                          onPopupStateChange?.(true);
+                        }
+                      }
+                    }}
+                    disabled={
                       task.apiData?.user_progress >=
                         task.apiData?.target_progress ||
                       task.apiData?.status === "CLAIMED" ||
                       task.apiData?.status === "WAITING"
-                        ? "not-allowed"
-                        : "pointer",
-                    background:
-                      task.apiData?.status === "WAITING"
-                        ? "rgba(82, 100, 206, 0.25)"
-                        : "transparent",
-                    border:
-                      task.apiData?.status === "WAITING"
-                        ? "none"
-                        : "1px solid #5264ce",
-                  }}
-                >
-                  {task.apiData?.user_progress >= task.apiData?.target_progress
-                    ? "Выполнено"
-                    : task.apiData?.status === "CLAIMED"
-                    ? "Выполнено"
-                    : task.apiData?.status === "WAITING"
-                    ? "В обработке"
-                    : "Выполнить"}
-                </button>
+                    }
+                    style={{
+                      opacity:
+                        task.apiData?.user_progress >=
+                          task.apiData?.target_progress ||
+                        task.apiData?.status === "CLAIMED"
+                          ? 0.5
+                          : 1,
+                      cursor:
+                        task.apiData?.user_progress >=
+                          task.apiData?.target_progress ||
+                        task.apiData?.status === "CLAIMED" ||
+                        task.apiData?.status === "WAITING"
+                          ? "not-allowed"
+                          : "pointer",
+                      background:
+                        task.apiData?.status === "WAITING"
+                          ? "rgba(82, 100, 206, 0.25)"
+                          : "transparent",
+                      border:
+                        task.apiData?.status === "WAITING"
+                          ? "none"
+                          : "1px solid #5264ce",
+                    }}
+                  >
+                    {task.apiData?.user_progress >=
+                    task.apiData?.target_progress
+                      ? "Выполнено"
+                      : task.apiData?.status === "CLAIMED"
+                      ? "Выполнено"
+                      : task.apiData?.status === "WAITING"
+                      ? "В обработке"
+                      : "Выполнить"}
+                  </button>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
 
-      {selectedTask && (
+      {selectedTask && !selectedTask.apiData?.type?.startsWith("banners-") && (
         <TaskPopup
           task={selectedTask}
           onClose={() => {

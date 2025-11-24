@@ -78,7 +78,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
     // Создаем элемент adsgram-task
     const adsgramElement = document.createElement("adsgram-task");
-    adsgramElement.setAttribute("data-block-id", "task-18088");
+    adsgramElement.setAttribute("data-block-id", "18088");
     adsgramElement.setAttribute("data-debug", "true");
     adsgramElement.setAttribute("data-debug-console", "false");
     adsgramElement.className = "task";

@@ -1,0 +1,66 @@
+.taskContainer {
+  width: 100%;
+}
+
+.task {
+  width: 100%;
+}
+
+.reward {
+  display: block;
+  text-align: center;
+  font-weight: 600;
+  color: #FFD700;
+  margin-bottom: 10px;
+}
+
+.button {
+  width: 100%;
+  padding: 12px 24px;
+  background: transparent;
+  border: 1px solid #5264ce;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background: rgba(82, 100, 206, 0.1);
+}
+
+.button_claim {
+  width: 100%;
+  padding: 12px 24px;
+  background: #5264ce;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.button_claim:hover {
+  background: #3d4fa8;
+}
+
+.button_done {
+  width: 100%;
+  padding: 12px 24px;
+  background: rgba(82, 100, 206, 0.25);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
