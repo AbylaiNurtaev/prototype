@@ -62,21 +62,23 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
       if (isBarzaAvailable) {
         console.log("[BannerClickPopup] Barza доступен, показываем его");
         setCurrentProvider("barza");
-        setIsLoading(false);
+        // isLoading останется true до загрузки баннера
         return;
       }
 
       if (isTadsAvailable) {
         console.log("[BannerClickPopup] Tads доступен, показываем его");
         setCurrentProvider("tads");
-        setIsLoading(false);
+        // Даем время на загрузку
+        setTimeout(() => setIsLoading(false), 1500);
         return;
       }
 
       // Если ни Barza, ни Tads недоступны, используем Adsgram
       console.log("[BannerClickPopup] Используем Adsgram как fallback");
       setCurrentProvider("adsgram-cpc");
-      setIsLoading(false);
+      // Даем время на загрузку
+      setTimeout(() => setIsLoading(false), 1500);
     };
 
     checkProviders();
