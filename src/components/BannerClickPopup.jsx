@@ -9,6 +9,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   const [useTads, setUseTads] = useState(true);
   const [tadsProvider, setTadsProvider] = useState(null);
   const [tadsRewarded, setTadsRewarded] = useState(false); // Флаг, что Tads уже наградил
+  const [adsgramLoading, setAdsgramLoading] = useState(true); // Состояние загрузки Adsgram
 
   useEffect(() => {
     // Инициализируем Tads провайдер
@@ -21,6 +22,58 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
     };
     initTads();
   }, []);
+
+  // Отслеживаем загрузку Adsgram баннера
+  useEffect(() => {
+    if (!useTads && !tadsRewarded) {
+      setAdsgramLoading(true);
+
+      // Используем MutationObserver для отслеживания появления контента
+      const observer = new MutationObserver((mutations) => {
+        const adsgramElement = document.querySelector("adsgram-task");
+        if (adsgramElement) {
+          // Проверяем наличие изображений или другого контента
+          const hasImages = adsgramElement.querySelectorAll("img").length > 0;
+          const hasIframe =
+            adsgramElement.querySelectorAll("iframe").length > 0;
+          const hasContent =
+            adsgramElement.children.length > 0 ||
+            adsgramElement.innerHTML.trim().length > 50; // Минимум контента
+
+          if (hasImages || hasIframe || hasContent) {
+            setAdsgramLoading(false);
+            observer.disconnect();
+          }
+        }
+      });
+
+      // Начинаем наблюдение через небольшую задержку
+      const startObserving = setTimeout(() => {
+        const adsgramElement = document.querySelector("adsgram-task");
+        if (adsgramElement) {
+          observer.observe(adsgramElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+          });
+        }
+      }, 500);
+
+      // Таймаут на случай, если баннер не загрузится
+      const timeout = setTimeout(() => {
+        setAdsgramLoading(false);
+        observer.disconnect();
+      }, 10000); // 10 секунд максимум
+
+      return () => {
+        clearTimeout(startObserving);
+        clearTimeout(timeout);
+        observer.disconnect();
+      };
+    } else {
+      setAdsgramLoading(false);
+    }
+  }, [useTads, tadsRewarded]);
 
   if (!task) return null;
 
@@ -75,20 +128,25 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
               onAdsNotFound={handleTadsNotFound}
             />
           ) : !tadsRewarded ? (
-            <Task
-              blockId="task-18088"
-              debug="true"
-              onReward={(detail) => {
-                console.log("✅ Adsgram CPC задание выполнено:", detail);
-                if (onReward) {
-                  onReward(task, "adsgram-cpc");
-                }
-              }}
-              rewardText={`${task.energy} энергии`}
-              buttonText="Кликнуть на баннер"
-              claimText="Забрать награду"
-              doneText="Выполнено"
-            />
+            <>
+              {adsgramLoading && (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loader}></div>
+                  <div className={styles.loadingText}>Загрузка баннера...</div>
+                </div>
+              )}
+              <Task
+                blockId="task-18088"
+                debug="true"
+                onReward={(detail) => {
+                  console.log("✅ Adsgram CPC задание выполнено:", detail);
+                  setAdsgramLoading(false);
+                  if (onReward) {
+                    onReward(task, "adsgram-cpc");
+                  }
+                }}
+              />
+            </>
           ) : null}
         </div>
       </div>
