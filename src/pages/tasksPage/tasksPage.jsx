@@ -149,25 +149,35 @@ const TasksPage = ({ onPopupStateChange }) => {
   // Обработчик успешного просмотра рекламы для заданий типа banners-*
   const handleBannerReward = useCallback(async (task, usedProvider = null) => {
     try {
+      console.log("📤 Отправляем подтверждение просмотра на бэкенд...", {
+        taskId: task.id,
+        usedProvider,
+      });
+
       // Определяем провайдера в зависимости от типа задания и использованного провайдера
       let provider;
       if (task.apiData?.type === "banners-cpc") {
         provider = "adsgram-cpc";
       } else {
-        // Для CPM используем провайдер, который показал рекламу, или adexium по умолчанию
-        provider = usedProvider || "adexium";
+        // Для CPM используем провайдер, который показал рекламу
+        provider = usedProvider || "adextra"; // По умолчанию adextra (первый в очереди)
       }
 
+      // Связываемся с бэкендом и подтверждаем просмотр (+1 прогресс)
       await confirmBannerView(task.id, provider, false);
 
       const updatedProgress = (task.apiData?.user_progress || 0) + 1;
       const targetProgress = task.apiData?.target_progress || 1;
 
+      console.log(`📊 Прогресс: ${updatedProgress}/${targetProgress}`);
+
+      // Если задание выполнено полностью, забираем награду
       if (updatedProgress >= targetProgress) {
+        console.log("🎉 Задание выполнено, забираем награду");
         await claimTask(task.id, false);
       }
 
-      // Перезагружаем задания
+      // Перезагружаем задания для обновления UI
       loadTasks();
       setShowSuccessToast(true);
     } catch (error) {
@@ -181,7 +191,9 @@ const TasksPage = ({ onPopupStateChange }) => {
     (task, usedProvider = null) => {
       console.log("✅ Реклама просмотрена успешно!", {
         provider: usedProvider,
+        taskId: task.id,
       });
+      // Вызываем handleBannerReward, который свяжется с бэкендом и обновит прогресс
       handleBannerReward(task, usedProvider);
       setCurrentCPMTask(null);
     },

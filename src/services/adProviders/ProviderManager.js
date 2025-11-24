@@ -202,8 +202,12 @@ class ProviderManager {
           );
           const result = await this.startAd(providerName);
 
-          // Если реклама успешно показана, возвращаем результат
+          // Если реклама успешно просмотрена, останавливаемся и возвращаем результат
+          // НЕ пробуем следующие провайдеры
           if (result.success) {
+            console.log(
+              `[ProviderManager] ✅ Реклама успешно просмотрена через ${providerName}, останавливаем поиск`
+            );
             return result;
           }
 
@@ -215,8 +219,19 @@ class ProviderManager {
             continue;
           }
 
-          // Если была ошибка или отмена, возвращаем результат
-          return result;
+          // Если была отмена пользователем, тоже пробуем следующий провайдер
+          if (result.cancelled) {
+            console.log(
+              `[ProviderManager] Пользователь отменил просмотр через ${providerName}, пробуем следующий...`
+            );
+            continue;
+          }
+
+          // Для других ошибок пробуем следующий провайдер
+          console.log(
+            `[ProviderManager] Ошибка у провайдера ${providerName}, пробуем следующий...`
+          );
+          continue;
         }
       } catch (error) {
         console.error(
