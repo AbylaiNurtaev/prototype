@@ -14,13 +14,15 @@
     <!-- Рекламные SDK провайдеров -->
     <!-- Adsgram SDK (используется для Adsgram CPC и Adsgram CPM) -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script async src="https://partner.adextra.io/jt/fb9241580830412d8a338984f66c494146f23f50.js"></script>
+    <!-- Adexium Widget SDK -->
     <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        const adexiumWidget = new AdexiumWidget({wid: '663a49e0-7cde-4d4d-83ad-a866a0f3b774', adFormat: 'interstitial'});
-        adexiumWidget.autoMode();
-    });
-</script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const adexiumWidget = new AdexiumWidget({wid: '663a49e0-7cde-4d4d-83ad-a866a0f3b774', adFormat: 'interstitial'});
+            adexiumWidget.autoMode();
+        });
+    </script>
   </head>
   <body>
     <div id="root"></div>

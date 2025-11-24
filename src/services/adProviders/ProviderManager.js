@@ -1,6 +1,7 @@
 import AdsgramCPC from "./providers/AdsgramCPC.js";
 import AdsgramCPM from "./providers/AdsgramCPM.js";
 import Adexium from "./providers/Adexium.js";
+import Adextra from "./providers/Adextra.js";
 
 /**
  * Менеджер рекламных провайдеров
@@ -44,6 +45,10 @@ class ProviderManager {
       "adexium",
       new Adexium({ ...defaultConfig, ...(configs["adexium"] || {}) })
     );
+    this.providers.set(
+      "adextra",
+      new Adextra({ ...defaultConfig, ...(configs["adextra"] || {}) })
+    );
 
     if (fallbackMode) {
       console.log(
@@ -78,6 +83,7 @@ class ProviderManager {
       "adsgram-cpc": "adsgram-cpc",
       "adsgram-cpm": "adsgram-cpm",
       adexium: "adexium",
+      adextra: "adextra",
     };
 
     return nameMap[name.toLowerCase()] || name.toLowerCase();
@@ -94,8 +100,8 @@ class ProviderManager {
       return ["adsgram-cpc"];
     } else {
       // Провайдеры для просмотров (CPM)
-      // Adexium имеет приоритет выше AdsgramCPM
-      return ["adexium", "adsgram-cpm"];
+      // Приоритет: Adextra -> Adexium -> AdsgramCPM
+      return ["adextra", "adexium", "adsgram-cpm"];
     }
   }
 
@@ -167,22 +173,50 @@ class ProviderManager {
 
     // Получаем список провайдеров для данного типа действия
     const providerList = this.getProvidersForAction(actionType);
+    console.log(
+      `[ProviderManager] Список провайдеров для ${actionType}:`,
+      providerList
+    );
 
     // Перебираем провайдеров по приоритету
     for (const providerName of providerList) {
       const provider = this.providers.get(providerName);
       if (!provider) {
+        console.warn(
+          `[ProviderManager] Провайдер ${providerName} не найден в списке`
+        );
         continue;
       }
 
       try {
+        console.log(`[ProviderManager] Проверяем провайдер: ${providerName}`);
         // Проверяем доступность рекламы
         const isAvailable = await provider.isAdAvailable();
+        console.log(
+          `[ProviderManager] Провайдер ${providerName} доступен:`,
+          isAvailable
+        );
         if (isAvailable) {
           console.log(
             `[ProviderManager] Найден доступный провайдер: ${providerName}`
           );
-          return await this.startAd(providerName);
+          const result = await this.startAd(providerName);
+
+          // Если реклама успешно показана, возвращаем результат
+          if (result.success) {
+            return result;
+          }
+
+          // Если реклама не найдена (noAd: true), пробуем следующий провайдер
+          if (result.noAd) {
+            console.log(
+              `[ProviderManager] Провайдер ${providerName} не нашел рекламу, пробуем следующий...`
+            );
+            continue;
+          }
+
+          // Если была ошибка или отмена, возвращаем результат
+          return result;
         }
       } catch (error) {
         console.error(
