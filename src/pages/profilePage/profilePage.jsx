@@ -15,20 +15,25 @@ const ProfilePage = ({ userData }) => {
     const fetchBalance = async () => {
       try {
         console.log("🔄 ПРОФИЛЬ: Начинаем загрузку баланса...");
-        
+
         const balanceData = await getBalance();
         console.log("💰 ПРОФИЛЬ: Баланс получен от API:", balanceData);
         console.log("💰 ПРОФИЛЬ: balanceData.wallet:", balanceData?.wallet);
         console.log("💰 ПРОФИЛЬ: BTC:", balanceData?.wallet?.btc);
         console.log("💰 ПРОФИЛЬ: Light (energy):", balanceData?.wallet?.light);
-        
+
         // Обновляем баланс из ответа API
         if (balanceData && balanceData.wallet) {
           const btcValue = parseFloat(balanceData.wallet.btc || 0);
           const energyValue = parseFloat(balanceData.wallet.light || 0);
-          
-          console.log("💰 ПРОФИЛЬ: Устанавливаем баланс - BTC:", btcValue, "Energy:", energyValue);
-          
+
+          console.log(
+            "💰 ПРОФИЛЬ: Устанавливаем баланс - BTC:",
+            btcValue,
+            "Energy:",
+            energyValue
+          );
+
           setBalance({
             btc: btcValue,
             energy: energyValue,
@@ -53,12 +58,13 @@ const ProfilePage = ({ userData }) => {
       if (userData.user_data) {
         const apiUser = userData.user_data;
         console.log("✅ Используем данные из API:", apiUser);
-        
+
         if (apiUser.photo_url) {
           setUserPhoto(apiUser.photo_url);
         }
-        
-        const displayName = apiUser.name || apiUser.username || apiUser.first_name || "user";
+
+        const displayName =
+          apiUser.name || apiUser.username || apiUser.first_name || "user";
         setUserName(displayName);
         return;
       }
@@ -111,7 +117,7 @@ const ProfilePage = ({ userData }) => {
               <div className={styles.balanceDivider}></div>
               <div className={styles.balanceItem}>
                 <img
-                  src="/mine-icons/energy.png"
+                  src="/tasks/energy.png"
                   alt="energy"
                   className={styles.balanceIcon}
                 />
