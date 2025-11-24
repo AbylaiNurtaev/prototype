@@ -5,8 +5,8 @@ import { Task } from "./Task";
 import providerManager from "../services/adProviders/ProviderManager.js";
 
 const BannerClickPopup = ({ task, onClose, onReward }) => {
-  // Приоритет: Barza -> Tads -> AdsgramCPC
-  const [currentProvider, setCurrentProvider] = useState("barza"); // Начинаем с Barza
+  // Приоритет: Adsgram -> Tads -> Barza
+  const [currentProvider, setCurrentProvider] = useState("adsgram-cpc"); // Начинаем с Adsgram
   const [providerRewarded, setProviderRewarded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef(null);
@@ -46,23 +46,32 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
     const checkProviders = async () => {
       await providerManager.initialize();
 
-      // Ускоряем проверку - проверяем все провайдеры параллельно
-      const [barzaProvider, tadsProvider] = await Promise.all([
-        providerManager.getProvider("barza"),
+      // Приоритет: Adsgram -> Tads -> Barza
+      // Проверяем все провайдеры параллельно
+      const [adsgramProvider, tadsProvider, barzaProvider] = await Promise.all([
+        providerManager.getProvider("adsgram-cpc"),
         providerManager.getProvider("tads"),
+        providerManager.getProvider("barza"),
       ]);
 
       // Проверяем доступность параллельно
-      const [isBarzaAvailable, isTadsAvailable] = await Promise.all([
-        barzaProvider ? barzaProvider.isAdAvailable() : Promise.resolve(false),
-        tadsProvider ? tadsProvider.isAdAvailable() : Promise.resolve(false),
-      ]);
+      const [isAdsgramAvailable, isTadsAvailable, isBarzaAvailable] =
+        await Promise.all([
+          adsgramProvider
+            ? adsgramProvider.isAdAvailable()
+            : Promise.resolve(false),
+          tadsProvider ? tadsProvider.isAdAvailable() : Promise.resolve(false),
+          barzaProvider
+            ? barzaProvider.isAdAvailable()
+            : Promise.resolve(false),
+        ]);
 
       // Выбираем первый доступный по приоритету
-      if (isBarzaAvailable) {
-        console.log("[BannerClickPopup] Barza доступен, показываем его");
-        setCurrentProvider("barza");
-        // isLoading останется true до загрузки баннера
+      if (isAdsgramAvailable) {
+        console.log("[BannerClickPopup] Adsgram доступен, показываем его");
+        setCurrentProvider("adsgram-cpc");
+        // Даем время на загрузку
+        setTimeout(() => setIsLoading(false), 1500);
         return;
       }
 
@@ -74,11 +83,20 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
         return;
       }
 
-      // Если ни Barza, ни Tads недоступны, используем Adsgram
-      console.log("[BannerClickPopup] Используем Adsgram как fallback");
+      if (isBarzaAvailable) {
+        console.log("[BannerClickPopup] Barza доступен, показываем его");
+        setCurrentProvider("barza");
+        // isLoading останется true до загрузки баннера
+        return;
+      }
+
+      // Если ни один провайдер недоступен, используем Adsgram как fallback
+      console.log(
+        "[BannerClickPopup] Ни один провайдер недоступен, используем Adsgram как fallback"
+      );
       setCurrentProvider("adsgram-cpc");
       // Даем время на загрузку
-      setTimeout(() => setIsLoading(false), 1500);
+      setTimeout(() => setIsLoading(false), 2000);
     };
 
     checkProviders();
@@ -196,7 +214,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
         </div>
 
         <div className={styles.taskContainer} ref={containerRef}>
-          {isLoading ? (
+          {isLoading && (
             <div className={styles.skeleton}>
               <div className={styles.skeletonIcon}></div>
               <div className={styles.skeletonText}>
@@ -204,7 +222,8 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
                 <div className={styles.skeletonLineShort}></div>
               </div>
             </div>
-          ) : (
+          )}
+          {!isLoading && (
             <>
               {!providerRewarded &&
                 currentProvider === "barza" &&
