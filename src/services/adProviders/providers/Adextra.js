@@ -123,26 +123,31 @@ class Adextra extends Provider {
       }
 
       // Сохраняем promise для разрешения в колбэках
-      this.displayPromise = { resolve };
+      this.displayPromise = { resolve, resolved: false };
 
       try {
         const placementId = this.config.placementId;
 
         // Определяем колбэки для обработки событий
         const onSuccess = () => {
-          console.log("[Adextra] ✅ Реклама показана успешно", { placementId });
+          console.log(
+            "[Adextra] ✅ onSuccess вызван - реклама показана успешно",
+            { placementId }
+          );
 
-          // Отправляем beacon на бэкенд о том, что реклама показана
-          // (опционально, если нужно отслеживать на бэкенде)
-          // fetch(`https://example.com/beacon/showed/${placementId}`).catch(() => {});
-
-          if (this.displayPromise) {
+          if (this.displayPromise && !this.displayPromise.resolved) {
             // Для CPM минимальное время просмотра
             const minViewTime = 5000;
+            const viewStartTime = Date.now();
 
             // Реклама показана, ждем минимальное время просмотра
             setTimeout(() => {
-              if (this.displayPromise) {
+              if (this.displayPromise && !this.displayPromise.resolved) {
+                const viewTime = Date.now() - viewStartTime;
+                console.log(
+                  `[Adextra] Время просмотра: ${viewTime}ms, резолвим промис с success=true`
+                );
+                this.displayPromise.resolved = true;
                 this.displayPromise.resolve({
                   success: true,
                   cancelled: false,
@@ -155,15 +160,15 @@ class Adextra extends Provider {
         };
 
         const onError = () => {
-          console.warn("[Adextra] ❌ Ошибка при показе рекламы", {
-            placementId,
-          });
+          console.warn(
+            "[Adextra] ❌ onError вызван - ошибка при показе рекламы",
+            {
+              placementId,
+            }
+          );
 
-          // Отправляем beacon на бэкенд об ошибке
-          // (опционально, если нужно отслеживать на бэкенде)
-          // fetch(`https://example.com/beacon/error/${placementId}`).catch(() => {});
-
-          if (this.displayPromise) {
+          if (this.displayPromise && !this.displayPromise.resolved) {
+            this.displayPromise.resolved = true;
             this.displayPromise.resolve({
               success: false,
               cancelled: false,
@@ -176,23 +181,63 @@ class Adextra extends Provider {
         // Показываем контейнер перед вызовом
         if (this.adContainer) {
           this.adContainer.style.display = "block";
+          console.log("[Adextra] Контейнер показан, ожидаем рекламу...");
         }
 
+        // Отслеживаем появление рекламы в контейнере
+        let adDetected = false;
+        const checkAdInterval = setInterval(() => {
+          if (this.adContainer && !adDetected) {
+            // Проверяем, есть ли дочерние элементы (реклама загрузилась)
+            const hasChildren = this.adContainer.children.length > 0;
+            const hasImages =
+              this.adContainer.querySelectorAll("img").length > 0;
+
+            if (hasChildren || hasImages) {
+              console.log("[Adextra] 🎯 Реклама обнаружена в контейнере!");
+              adDetected = true;
+              clearInterval(checkAdInterval);
+
+              // Если onSuccess еще не вызван, вызываем его вручную
+              if (this.displayPromise && !this.displayPromise.resolved) {
+                console.log(
+                  "[Adextra] Вызываем onSuccess вручную, т.к. реклама обнаружена"
+                );
+                onSuccess();
+              }
+            }
+          }
+        }, 500);
+
         // Вызываем p_adextra с колбэками
+        console.log("[Adextra] Вызываем p_adextra...");
         window.p_adextra(onSuccess, onError);
 
         // Таймаут на случай, если колбэки не вызовутся
+        // Увеличиваем время, т.к. реклама может загружаться
         setTimeout(() => {
-          if (this.displayPromise) {
-            console.warn("[Adextra] Таймаут ожидания рекламы");
-            this.displayPromise.resolve({
-              success: false,
-              cancelled: false,
-              noAd: true,
-            });
-            this.displayPromise = null;
+          clearInterval(checkAdInterval);
+          if (this.displayPromise && !this.displayPromise.resolved) {
+            if (adDetected) {
+              // Если реклама обнаружена, но промис еще не резолвился, вызываем onSuccess
+              console.log(
+                "[Adextra] Реклама обнаружена, но промис еще не резолвился, вызываем onSuccess"
+              );
+              onSuccess();
+            } else {
+              console.warn(
+                "[Adextra] Таймаут ожидания рекламы (15 секунд) - реклама не обнаружена"
+              );
+              this.displayPromise.resolved = true;
+              this.displayPromise.resolve({
+                success: false,
+                cancelled: false,
+                noAd: true,
+              });
+              this.displayPromise = null;
+            }
           }
-        }, 10000);
+        }, 15000);
       } catch (error) {
         console.error("[Adextra] Ошибка при показе рекламы:", error);
         resolve({ success: false, cancelled: true, noAd: false });
