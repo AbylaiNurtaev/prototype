@@ -111,7 +111,7 @@ class ProviderManager {
     if (actionType === "click" || actionType === "cpc") {
       // Провайдеры для кликов (CPC)
       // Приоритет: Barza -> Tads -> AdsgramCPC
-      return ["barza", "tads", "adsgram-cpc"];
+      return ["tads", "adsgram-cpc", "barza"];
     } else {
       // Провайдеры для просмотров (CPM)
       // Приоритет: Adexium -> Adextra -> AdsgramCPM
