@@ -114,8 +114,8 @@ class ProviderManager {
       return ["barza", "tads", "adsgram-cpc"];
     } else {
       // Провайдеры для просмотров (CPM)
-      // Приоритет: Adextra -> Adexium -> AdsgramCPM
-      return ["adextra", "adexium", "adsgram-cpm"];
+      // Приоритет: Adexium -> Adextra -> AdsgramCPM
+      return ["adexium", "adextra", "adsgram-cpm"];
     }
   }
 
