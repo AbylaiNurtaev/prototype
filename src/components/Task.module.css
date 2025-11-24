@@ -64,3 +64,29 @@
   cursor: not-allowed;
 }
 
+.executeButton {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 1px solid #5264ce;
+  border-radius: 1000px;
+  color: #fff;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 100%;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.executeButton:hover {
+  background: rgba(82, 100, 206, 0.1);
+}
+
+.executeButton:active {
+  background: rgba(82, 100, 206, 0.2);
+  transform: scale(0.98);
+}
+
