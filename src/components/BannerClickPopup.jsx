@@ -10,6 +10,36 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   const [providerRewarded, setProviderRewarded] = useState(false);
   const containerRef = useRef(null);
 
+  // Скрываем кнопки Adsgram через глобальные стили
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      .banner-click-popup adsgram-task [slot="button"],
+      .banner-click-popup adsgram-task [slot="claim"],
+      .banner-click-popup adsgram-task [slot="done"],
+      .banner-click-popup adsgram-task [slot="reward"],
+      .banner-click-popup adsgram-task button,
+      .banner-click-popup adsgram-task .button,
+      .banner-click-popup adsgram-task .button_claim,
+      .banner-click-popup adsgram-task .button_done,
+      .banner-click-popup adsgram-task .reward {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   useEffect(() => {
     // Ускоряем проверку провайдеров - проверяем параллельно
     const checkProviders = async () => {
@@ -121,7 +151,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={`${styles.overlay} banner-click-popup`} onClick={onClose}>
       <div className={styles.popup} onClick={(e) => e.stopPropagation()}>
         <button className={styles.closeButton} onClick={onClose}>
           <svg
