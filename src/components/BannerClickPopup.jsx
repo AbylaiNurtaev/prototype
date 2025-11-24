@@ -8,6 +8,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   // Приоритет: Barza -> Tads -> AdsgramCPC
   const [currentProvider, setCurrentProvider] = useState("barza"); // Начинаем с Barza
   const [providerRewarded, setProviderRewarded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef(null);
 
   // Скрываем кнопки Adsgram через глобальные стили
@@ -61,18 +62,21 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
       if (isBarzaAvailable) {
         console.log("[BannerClickPopup] Barza доступен, показываем его");
         setCurrentProvider("barza");
+        setIsLoading(false);
         return;
       }
 
       if (isTadsAvailable) {
         console.log("[BannerClickPopup] Tads доступен, показываем его");
         setCurrentProvider("tads");
+        setIsLoading(false);
         return;
       }
 
       // Если ни Barza, ни Tads недоступны, используем Adsgram
       console.log("[BannerClickPopup] Используем Adsgram как fallback");
       setCurrentProvider("adsgram-cpc");
+      setIsLoading(false);
     };
 
     checkProviders();
@@ -97,6 +101,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
               !containerRef.current.contains(adElement)
             ) {
               containerRef.current.appendChild(adElement);
+              setIsLoading(false);
 
               // Слушаем клик на баннер Barza
               const handleBarzaClick = () => {
@@ -121,11 +126,23 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
               "[BannerClickPopup] Barza не нашел рекламу, пробуем Tads"
             );
             setCurrentProvider("tads");
+            setIsLoading(false);
           }
         });
       }
     }
   }, [currentProvider, providerRewarded, task, onReward]);
+
+  // Скрываем скелетон когда баннер загрузился (для Tads и Adsgram)
+  useEffect(() => {
+    if (currentProvider === "tads" || currentProvider === "adsgram-cpc") {
+      // Даем немного времени на загрузку баннера
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentProvider]);
 
   if (!task) return null;
 
@@ -168,36 +185,56 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
           </svg>
         </button>
 
+        <div className={styles.contentWrapper}>
+          <div className={styles.title}>Кликни на баннер</div>
+          <div className={styles.description}>
+            Нажми на рекламу и получи{" "}
+            <span className={styles.energy}>{task?.energy || 0} энергии</span>
+          </div>
+        </div>
+
         <div className={styles.taskContainer} ref={containerRef}>
-          {!providerRewarded &&
-            currentProvider === "barza" &&
-            // Barza рендерится через getAdElement()
-            null}
-          {!providerRewarded && currentProvider === "tads" && (
-            <TadsWidget
-              id="972"
-              type="static"
-              debug={false}
-              onClickReward={handleTadsReward}
-              onAdsNotFound={handleTadsNotFound}
-            />
-          )}
-          {!providerRewarded && currentProvider === "adsgram-cpc" && (
-            <Task
-              blockId="task-18088"
-              debug="true"
-              onReward={handleAdsgramReward}
-            />
-          )}
-          {!currentProvider && !providerRewarded && (
-            // Показываем Tads по умолчанию, если система провайдеров еще не определила
-            <TadsWidget
-              id="972"
-              type="static"
-              debug={false}
-              onClickReward={handleTadsReward}
-              onAdsNotFound={handleTadsNotFound}
-            />
+          {isLoading ? (
+            <div className={styles.skeleton}>
+              <div className={styles.skeletonIcon}></div>
+              <div className={styles.skeletonText}>
+                <div className={styles.skeletonLine}></div>
+                <div className={styles.skeletonLineShort}></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!providerRewarded &&
+                currentProvider === "barza" &&
+                // Barza рендерится через getAdElement()
+                null}
+              {!providerRewarded && currentProvider === "tads" && (
+                <TadsWidget
+                  id="972"
+                  type="static"
+                  debug={false}
+                  onClickReward={handleTadsReward}
+                  onAdsNotFound={handleTadsNotFound}
+                />
+              )}
+              {!providerRewarded && currentProvider === "adsgram-cpc" && (
+                <Task
+                  blockId="task-18088"
+                  debug="true"
+                  onReward={handleAdsgramReward}
+                />
+              )}
+              {!currentProvider && !providerRewarded && (
+                // Показываем Tads по умолчанию, если система провайдеров еще не определила
+                <TadsWidget
+                  id="972"
+                  type="static"
+                  debug={false}
+                  onClickReward={handleTadsReward}
+                  onAdsNotFound={handleTadsNotFound}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
