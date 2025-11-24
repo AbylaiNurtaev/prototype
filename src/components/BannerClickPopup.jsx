@@ -38,7 +38,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
 
         <div className={styles.taskContainer}>
           <Task
-            blockId="task-18808"
+            blockId="task-18088"
             debug="true"
             onReward={(detail) => {
               console.log("✅ CPC задание выполнено:", detail);
@@ -58,4 +58,3 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
 };
 
 export default BannerClickPopup;
-

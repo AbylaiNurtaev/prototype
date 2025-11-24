@@ -78,7 +78,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
     // Определяем blockId в зависимости от типа задания
     // Для CPC заданий используется формат "task-XXXXX", для CPM - просто цифры
-    const blockId = taskType === "banners-cpc" ? "task-18088" : "18010";
+    const blockId = taskType === "banners-cpc" ? "task-18808" : "18010";
 
     // Создаем элемент adsgram-task
     const adsgramElement = document.createElement("adsgram-task");
