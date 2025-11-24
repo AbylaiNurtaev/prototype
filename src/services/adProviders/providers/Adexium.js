@@ -6,7 +6,7 @@ import Provider from "../Provider.js";
 class Adexium extends Provider {
   constructor(config = {}) {
     super("adexium", {
-      widgetId: config.widgetId || "11381",
+      widgetId: config.widgetId || "663a49e0-7cde-4d4d-83ad-a866a0f3b774",
       format: config.format || "interstitial",
       ...config,
     });
@@ -40,14 +40,12 @@ class Adexium extends Provider {
       return;
     }
 
-    // Инициализируем AdexiumWidget с простой конфигурацией
+    // Инициализируем AdexiumWidget с конфигурацией
+    // НЕ используем autoMode, т.к. будем вызывать requestAd вручную
     this.sdk = new window.AdexiumWidget({
       wid: this.config.widgetId,
       adFormat: this.config.format || "interstitial",
-      firstAdImpressionIntervalInSeconds: 5,
-      adImpressionIntervalInSeconds: 100,
-      debug: true,
-      isFullScreen: false,
+      debug: false, // Убираем debug в продакшене
     });
 
     // Настраиваем обработчики событий
@@ -58,18 +56,23 @@ class Adexium extends Provider {
     if (!this.sdk) return;
 
     // Обработчик получения рекламы
+    // Когда реклама получена, автоматически показываем её
     this.sdk.on("adReceived", (ad) => {
+      console.log("[Adexium] ✅ Реклама получена:", ad);
       this.currentAd = ad;
+
       // Если есть ожидающий промис, показываем рекламу
       if (this.displayPromise && this.sdk && ad) {
+        // Показываем рекламу используя displayAd
         this.sdk.displayAd(ad);
       }
     });
 
     // Обработчик отсутствия рекламы
     this.sdk.on("noAdFound", () => {
-      console.log("[Adexium] Реклама не найдена");
-      if (this.displayPromise) {
+      console.warn("[Adexium] ❌ Реклама не найдена");
+      if (this.displayPromise && !this.displayPromise.resolved) {
+        this.displayPromise.resolved = true;
         this.displayPromise.resolve({
           success: false,
           cancelled: false,
@@ -79,28 +82,11 @@ class Adexium extends Provider {
       }
     });
 
-    // Обработчик ошибок (если SDK поддерживает)
-    if (typeof this.sdk.on === "function") {
-      try {
-        this.sdk.on("error", (error) => {
-          console.warn("[Adexium] Ошибка SDK:", error);
-          if (this.displayPromise) {
-            this.displayPromise.resolve({
-              success: false,
-              cancelled: false,
-              noAd: true,
-            });
-            this.displayPromise = null;
-          }
-        });
-      } catch (e) {
-        // Игнорируем, если событие error не поддерживается
-      }
-    }
-
     // Обработчик завершения просмотра рекламы
     this.sdk.on("adPlaybackCompleted", () => {
-      if (this.displayPromise) {
+      console.log("[Adexium] ✅ Просмотр рекламы завершен");
+      if (this.displayPromise && !this.displayPromise.resolved) {
+        this.displayPromise.resolved = true;
         this.displayPromise.resolve({
           success: true,
           cancelled: false,
@@ -110,9 +96,11 @@ class Adexium extends Provider {
       }
     });
 
-    // Обработчик закрытия рекламы
+    // Обработчик закрытия рекламы пользователем
     this.sdk.on("adClosed", () => {
-      if (this.displayPromise) {
+      console.log("[Adexium] ⚠️ Реклама закрыта пользователем");
+      if (this.displayPromise && !this.displayPromise.resolved) {
+        this.displayPromise.resolved = true;
         this.displayPromise.resolve({
           success: false,
           cancelled: true,
@@ -162,25 +150,33 @@ class Adexium extends Provider {
       }
 
       // Сохраняем promise для разрешения в обработчиках событий
-      this.displayPromise = { resolve };
+      this.displayPromise = { resolve, resolved: false };
 
       try {
         // Проверяем, что метод requestAd существует
         if (typeof adData.sdk.requestAd !== "function") {
           console.error("[Adexium] Метод requestAd не доступен");
-          resolve({ success: false, cancelled: false, noAd: true });
+          this.displayPromise.resolved = true;
+          this.displayPromise.resolve({
+            success: false,
+            cancelled: false,
+            noAd: true,
+          });
           this.displayPromise = null;
           return;
         }
 
-        // Запрашиваем рекламу вручную (не используем autoMode, т.к. он запускает автоматический показ)
-        // Реклама будет показана автоматически через событие adReceived
+        console.log("[Adexium] Запрашиваем рекламу через requestAd...");
+
+        // Запрашиваем рекламу вручную
+        // Когда реклама будет получена, событие adReceived автоматически вызовет displayAd
         adData.sdk.requestAd(this.config.format || "interstitial");
 
         // Таймаут на случай, если реклама не загрузится
         setTimeout(() => {
-          if (this.displayPromise) {
-            console.warn("[Adexium] Таймаут ожидания рекламы");
+          if (this.displayPromise && !this.displayPromise.resolved) {
+            console.warn("[Adexium] Таймаут ожидания рекламы (15 секунд)");
+            this.displayPromise.resolved = true;
             this.displayPromise.resolve({
               success: false,
               cancelled: false,
@@ -191,8 +187,15 @@ class Adexium extends Provider {
         }, 15000);
       } catch (error) {
         console.error("[Adexium] Ошибка при показе рекламы:", error);
-        resolve({ success: false, cancelled: true, noAd: false });
-        this.displayPromise = null;
+        if (this.displayPromise && !this.displayPromise.resolved) {
+          this.displayPromise.resolved = true;
+          this.displayPromise.resolve({
+            success: false,
+            cancelled: true,
+            noAd: false,
+          });
+          this.displayPromise = null;
+        }
       }
     });
   }
