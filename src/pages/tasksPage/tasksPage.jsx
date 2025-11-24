@@ -10,7 +10,7 @@ import {
   confirmBannerView,
   claimTask,
 } from "../../services/api";
-import { useAdsgram } from "../../hooks/useAdsgram";
+import providerManager from "../../services/adProviders";
 
 const TasksPage = ({ onPopupStateChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -147,9 +147,18 @@ const TasksPage = ({ onPopupStateChange }) => {
   };
 
   // Обработчик успешного просмотра рекламы для заданий типа banners-*
-  const handleBannerReward = useCallback(async (task) => {
+  const handleBannerReward = useCallback(async (task, usedProvider = null) => {
     try {
-      await confirmBannerView(task.id, "adsgram-cpc", false);
+      // Определяем провайдера в зависимости от типа задания и использованного провайдера
+      let provider;
+      if (task.apiData?.type === "banners-cpc") {
+        provider = "adsgram-cpc";
+      } else {
+        // Для CPM используем провайдер, который показал рекламу, или adexium по умолчанию
+        provider = usedProvider || "adexium";
+      }
+
+      await confirmBannerView(task.id, provider, false);
 
       const updatedProgress = (task.apiData?.user_progress || 0) + 1;
       const targetProgress = task.apiData?.target_progress || 1;
@@ -169,9 +178,11 @@ const TasksPage = ({ onPopupStateChange }) => {
 
   // Обработчик успешного просмотра рекламы
   const onAdReward = useCallback(
-    (task) => {
-      console.log("✅ Реклама просмотрена успешно!");
-      handleBannerReward(task);
+    (task, usedProvider = null) => {
+      console.log("✅ Реклама просмотрена успешно!", {
+        provider: usedProvider,
+      });
+      handleBannerReward(task, usedProvider);
       setCurrentCPMTask(null);
     },
     [handleBannerReward]
@@ -183,25 +194,42 @@ const TasksPage = ({ onPopupStateChange }) => {
     setCurrentCPMTask(null);
   }, []);
 
-  // Хук для показа CPM рекламы (Посмотреть рекламу)
-  const showCPMAd = useAdsgram({
-    blockId: "18010",
-    onReward: () => {
-      if (currentCPMTask) {
-        onAdReward(currentCPMTask);
-      }
-    },
-    onError: onAdError,
-  });
-
   // Обработчик клика на CPM задание (Посмотреть рекламу)
   const handleCPMTaskClick = useCallback(
     async (task) => {
-      setCurrentCPMTask(task);
-      // Показываем рекламу через хук
-      await showCPMAd();
+      try {
+        setCurrentCPMTask(task);
+
+        // Инициализируем менеджер провайдеров
+        await providerManager.initialize();
+
+        // Показываем рекламу через систему провайдеров с приоритетом Adexium
+        // Система сначала попробует Adexium, затем AdsgramCPM
+        const result = await providerManager.startAdWithFallback("view");
+
+        console.log("📊 Результат показа рекламы:", result);
+
+        if (result.success) {
+          // Реклама просмотрена успешно
+          // Передаем информацию о провайдере, который показал рекламу
+          onAdReward(task, result.provider);
+        } else if (result.noAd) {
+          // Реклама не найдена
+          console.warn("⚠️ Реклама не найдена у всех провайдеров");
+          onAdError({ error: true, description: "Реклама не найдена" });
+        } else if (result.cancelled) {
+          // Пользователь отменил просмотр
+          console.warn("⚠️ Просмотр рекламы отменен");
+          onAdError({ error: true, description: "Просмотр отменен" });
+        } else {
+          onAdError({ error: true, description: "Неизвестная ошибка" });
+        }
+      } catch (error) {
+        console.error("❌ Ошибка при показе рекламы:", error);
+        onAdError(error);
+      }
     },
-    [showCPMAd]
+    [onAdReward, onAdError]
   );
 
   // Загрузка заданий из API при монтировании и при повторном посещении страницы
@@ -356,73 +384,72 @@ const TasksPage = ({ onPopupStateChange }) => {
                   </div>
                 </div>
                 <button
-                    className={styles.taskButton}
-                    onClick={() => {
-                      // Проверяем, достигнут ли прогресс
-                      const isCompleted =
-                        task.apiData?.user_progress >=
-                        task.apiData?.target_progress;
+                  className={styles.taskButton}
+                  onClick={() => {
+                    // Проверяем, достигнут ли прогресс
+                    const isCompleted =
+                      task.apiData?.user_progress >=
+                      task.apiData?.target_progress;
 
-                      if (
-                        !isCompleted &&
-                        task.apiData?.status !== "CLAIMED" &&
-                        task.apiData?.status !== "WAITING"
-                      ) {
-                        // Для CPC заданий открываем попап с баннером
-                        if (task.apiData?.type === "banners-cpc") {
-                          setSelectedCPCTask(task);
-                          onPopupStateChange?.(true);
-                        }
-                        // Для CPM заданий показываем рекламу через хук
-                        else if (task.apiData?.type === "banners-cpm") {
-                          handleCPMTaskClick(task);
-                        }
-                        // Для других заданий открываем попап
-                        else {
-                          setSelectedTask(task);
-                          onPopupStateChange?.(true);
-                        }
+                    if (
+                      !isCompleted &&
+                      task.apiData?.status !== "CLAIMED" &&
+                      task.apiData?.status !== "WAITING"
+                    ) {
+                      // Для CPC заданий открываем попап с баннером
+                      if (task.apiData?.type === "banners-cpc") {
+                        setSelectedCPCTask(task);
+                        onPopupStateChange?.(true);
                       }
-                    }}
-                    disabled={
+                      // Для CPM заданий показываем рекламу через хук
+                      else if (task.apiData?.type === "banners-cpm") {
+                        handleCPMTaskClick(task);
+                      }
+                      // Для других заданий открываем попап
+                      else {
+                        setSelectedTask(task);
+                        onPopupStateChange?.(true);
+                      }
+                    }
+                  }}
+                  disabled={
+                    task.apiData?.user_progress >=
+                      task.apiData?.target_progress ||
+                    task.apiData?.status === "CLAIMED" ||
+                    task.apiData?.status === "WAITING"
+                  }
+                  style={{
+                    opacity:
+                      task.apiData?.user_progress >=
+                        task.apiData?.target_progress ||
+                      task.apiData?.status === "CLAIMED"
+                        ? 0.5
+                        : 1,
+                    cursor:
                       task.apiData?.user_progress >=
                         task.apiData?.target_progress ||
                       task.apiData?.status === "CLAIMED" ||
                       task.apiData?.status === "WAITING"
-                    }
-                    style={{
-                      opacity:
-                        task.apiData?.user_progress >=
-                          task.apiData?.target_progress ||
-                        task.apiData?.status === "CLAIMED"
-                          ? 0.5
-                          : 1,
-                      cursor:
-                        task.apiData?.user_progress >=
-                          task.apiData?.target_progress ||
-                        task.apiData?.status === "CLAIMED" ||
-                        task.apiData?.status === "WAITING"
-                          ? "not-allowed"
-                          : "pointer",
-                      background:
-                        task.apiData?.status === "WAITING"
-                          ? "rgba(82, 100, 206, 0.25)"
-                          : "transparent",
-                      border:
-                        task.apiData?.status === "WAITING"
-                          ? "none"
-                          : "1px solid #5264ce",
-                    }}
-                  >
-                    {task.apiData?.user_progress >=
-                    task.apiData?.target_progress
-                      ? "Выполнено"
-                      : task.apiData?.status === "CLAIMED"
-                      ? "Выполнено"
-                      : task.apiData?.status === "WAITING"
-                      ? "В обработке"
-                      : "Выполнить"}
-                  </button>
+                        ? "not-allowed"
+                        : "pointer",
+                    background:
+                      task.apiData?.status === "WAITING"
+                        ? "rgba(82, 100, 206, 0.25)"
+                        : "transparent",
+                    border:
+                      task.apiData?.status === "WAITING"
+                        ? "none"
+                        : "1px solid #5264ce",
+                  }}
+                >
+                  {task.apiData?.user_progress >= task.apiData?.target_progress
+                    ? "Выполнено"
+                    : task.apiData?.status === "CLAIMED"
+                    ? "Выполнено"
+                    : task.apiData?.status === "WAITING"
+                    ? "В обработке"
+                    : "Выполнить"}
+                </button>
               </div>
             ))
           )}

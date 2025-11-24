@@ -1,13 +1,13 @@
 import Provider from "../Provider.js";
 
 /**
- * Провайдер Adexium
+ * Провайдер Adexium (для просмотра рекламы - CPM)
  */
 class Adexium extends Provider {
   constructor(config = {}) {
     super("adexium", {
-      apiKey: config.apiKey || "",
-      zoneId: config.zoneId || "",
+      widgetId: config.widgetId || "663a49e0-7cde-4d4d-83ad-a866a0f3b774",
+      format: config.format || "interstitial",
       ...config,
     });
   }
@@ -15,46 +15,97 @@ class Adexium extends Provider {
   async loadSDK() {
     // SDK Adexium загружается через внешний <script> тег в index.html
     // Просто проверяем, что SDK доступен
-    if (window.Adexium) {
+    if (window.AdexiumWidget) {
       return;
     }
 
     // Если SDK не загружен, ждем немного (на случай, если скрипт еще загружается)
     let attempts = 0;
     const maxAttempts = 10;
-    while (!window.Adexium && attempts < maxAttempts) {
+    while (!window.AdexiumWidget && attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       attempts++;
     }
 
-    if (!window.Adexium) {
+    if (!window.AdexiumWidget) {
       console.warn("[Adexium] SDK не загружен. Убедитесь, что скрипт добавлен в index.html");
     }
   }
 
   async initSDK() {
-    if (!window.Adexium) {
+    if (!window.AdexiumWidget) {
       // Не выбрасываем ошибку, просто помечаем как не инициализированный
       return;
     }
 
-    this.sdk = window.Adexium.init({
-      apiKey: this.config.apiKey,
-      zoneId: this.config.zoneId,
+    // Инициализируем AdexiumWidget
+    this.sdk = new window.AdexiumWidget({
+      wid: this.config.widgetId,
+      adFormat: this.config.format || "interstitial",
+      debug: true,
+    });
+
+    // Настраиваем обработчики событий
+    this.setupEventHandlers();
+  }
+
+  setupEventHandlers() {
+    if (!this.sdk) return;
+
+    // Обработчик получения рекламы
+    this.sdk.on("adReceived", (ad) => {
+      this.currentAd = ad;
+      // Если есть ожидающий промис, показываем рекламу
+      if (this.displayPromise && this.sdk && ad) {
+        this.sdk.displayAd(ad);
+      }
+    });
+
+    // Обработчик отсутствия рекламы
+    this.sdk.on("noAdFound", () => {
+      if (this.displayPromise) {
+        this.displayPromise.resolve({
+          success: false,
+          cancelled: false,
+          noAd: true,
+        });
+        this.displayPromise = null;
+      }
+    });
+
+    // Обработчик завершения просмотра рекламы
+    this.sdk.on("adPlaybackCompleted", () => {
+      if (this.displayPromise) {
+        this.displayPromise.resolve({
+          success: true,
+          cancelled: false,
+          noAd: false,
+        });
+        this.displayPromise = null;
+      }
+    });
+
+    // Обработчик закрытия рекламы
+    this.sdk.on("adClosed", () => {
+      if (this.displayPromise) {
+        this.displayPromise.resolve({
+          success: false,
+          cancelled: true,
+          noAd: false,
+        });
+        this.displayPromise = null;
+      }
     });
   }
 
   async checkAdAvailability() {
-    if (!this.sdk || !window.Adexium) {
+    if (!this.sdk || !window.AdexiumWidget) {
       return false;
     }
 
-    try {
-      return await this.sdk.hasAd();
-    } catch (error) {
-      console.error("[Adexium] Ошибка проверки доступности:", error);
-      return false;
-    }
+    // Для Adexium всегда считаем, что реклама может быть доступна
+    // Реальная проверка происходит при запросе
+    return true;
   }
 
   async fetchAd() {
@@ -62,64 +113,50 @@ class Adexium extends Provider {
       throw new Error("SDK не инициализирован");
     }
 
-    try {
-      const ad = await this.sdk.loadAd();
-      return {
-        title: ad.title || "",
-        description: ad.description || "",
-        image_url: ad.image || ad.imageUrl || "",
-        link: ad.url || ad.clickUrl || "",
-        provider: this.name,
-      };
-    } catch (error) {
-      console.error("[Adexium] Ошибка загрузки рекламы:", error);
-      throw error;
-    }
+    // Для Adexium реклама загружается автоматически через requestAd
+    // Возвращаем объект с данными для отображения
+    return {
+      provider: this.name,
+      sdk: this.sdk,
+    };
   }
 
   async displayAd(adData) {
     return new Promise((resolve) => {
-      if (!adData || !adData.link) {
+      if (!adData || !adData.sdk) {
         resolve({ success: false, cancelled: false, noAd: true });
         return;
       }
 
-      const adWindow = window.open(adData.link, "_blank", "noopener,noreferrer");
+      // Сохраняем promise для разрешения в обработчиках событий
+      this.displayPromise = { resolve };
 
-      if (!adWindow) {
-        resolve({ success: false, cancelled: true, noAd: false });
-        return;
-      }
-
-      // Для CPM минимальное время просмотра
-      const minViewTime = 5000;
-      let viewStartTime = Date.now();
-
-      const checkClosed = setInterval(() => {
-        if (adWindow.closed) {
-          clearInterval(checkClosed);
-          const viewTime = Date.now() - viewStartTime;
-          resolve({
-            success: viewTime >= minViewTime,
-            cancelled: viewTime < minViewTime,
-            noAd: false,
-          });
-        }
-      }, 500);
-
-      setTimeout(() => {
-        clearInterval(checkClosed);
-        if (!adWindow.closed) {
-          resolve({ success: true, cancelled: false, noAd: false });
+      try {
+        // Если реклама уже получена, показываем её сразу
+        if (this.currentAd) {
+          adData.sdk.displayAd(this.currentAd);
         } else {
-          const viewTime = Date.now() - viewStartTime;
-          resolve({
-            success: viewTime >= minViewTime,
-            cancelled: viewTime < minViewTime,
-            noAd: false,
-          });
+          // Запрашиваем рекламу
+          // Реклама будет показана автоматически в обработчике adReceived
+          adData.sdk.requestAd(this.config.format || "interstitial");
         }
-      }, 30000);
+
+        // Таймаут на случай, если реклама не загрузится
+        setTimeout(() => {
+          if (this.displayPromise) {
+            this.displayPromise.resolve({
+              success: false,
+              cancelled: false,
+              noAd: true,
+            });
+            this.displayPromise = null;
+          }
+        }, 10000);
+      } catch (error) {
+        console.error("[Adexium] Ошибка при показе рекламы:", error);
+        resolve({ success: false, cancelled: true, noAd: false });
+        this.displayPromise = null;
+      }
     });
   }
 }

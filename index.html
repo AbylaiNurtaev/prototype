@@ -8,12 +8,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Pixelify+Sans:wght@400..700&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
     <title>bitcoin-front</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     
     <!-- Рекламные SDK провайдеров -->
     <!-- Adsgram SDK (используется для Adsgram CPC и Adsgram CPM) -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <!-- Замените на реальный URL: https://cdn.adsgram.com/sdk/v1/adsgram.min.js -->
+    <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const adexiumWidget = new AdexiumWidget({wid: '663a49e0-7cde-4d4d-83ad-a866a0f3b774', adFormat: 'interstitial'});
+        adexiumWidget.autoMode();
+    });
+</script>
   </head>
   <body>
     <div id="root"></div>
