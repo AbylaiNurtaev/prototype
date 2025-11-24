@@ -76,9 +76,13 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
     const container = adsgramContainerRef.current;
 
+    // Определяем blockId в зависимости от типа задания
+    // Для CPC заданий используется формат "task-XXXXX", для CPM - просто цифры
+    const blockId = taskType === "banners-cpc" ? "task-18808" : "18010";
+
     // Создаем элемент adsgram-task
     const adsgramElement = document.createElement("adsgram-task");
-    adsgramElement.setAttribute("data-block-id", "18088");
+    adsgramElement.setAttribute("data-block-id", blockId);
     adsgramElement.setAttribute("data-debug", "true");
     adsgramElement.setAttribute("data-debug-console", "false");
     adsgramElement.className = "task";
@@ -112,7 +116,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         container.removeChild(adsgramElement);
       }
     };
-  }, [isBanner, handleBannerReward, onTaskFailed]);
+  }, [isBanner, taskType, handleBannerReward, onTaskFailed]);
 
   console.log("📋 TaskPopup - данные задания:", {
     task,

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./tasksPage.module.scss";
 import TaskPopup from "../../components/TaskPopup";
+import BannerClickPopup from "../../components/BannerClickPopup";
 import SuccessToast from "../../components/SuccessToast";
 import ErrorToast from "../../components/ErrorToast";
-import { Task } from "../../components/Task";
 import {
   getTasks,
   getExternalTasks,
@@ -19,7 +19,8 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const pageRef = useRef(null);
-  const [activeCPCTask, setActiveCPCTask] = useState(null); // Для отслеживания активного CPC задания
+  const [selectedCPCTask, setSelectedCPCTask] = useState(null); // Для CPC задания с попапом
+  const [currentCPMTask, setCurrentCPMTask] = useState(null); // Текущее CPM задание для рекламы
 
   // Функция загрузки заданий (нужна для handleBannerReward)
   const loadTasks = async () => {
@@ -166,11 +167,12 @@ const TasksPage = ({ onPopupStateChange }) => {
     }
   }, []);
 
-  // Хук для показа Adsgram рекламы
+  // Обработчик успешного просмотра рекламы
   const onAdReward = useCallback(
     (task) => {
       console.log("✅ Реклама просмотрена успешно!");
       handleBannerReward(task);
+      setCurrentCPMTask(null);
     },
     [handleBannerReward]
   );
@@ -178,44 +180,28 @@ const TasksPage = ({ onPopupStateChange }) => {
   const onAdError = useCallback((result) => {
     console.error("❌ Ошибка при показе рекламы:", result);
     setShowErrorToast(true);
+    setCurrentCPMTask(null);
   }, []);
 
-  // Обработчик клика на задание типа banners-* - показываем рекламу сразу
-  const handleBannerTaskClick = useCallback(
-    async (task) => {
-      try {
-        if (!window.Adsgram) {
-          console.error("❌ Adsgram SDK не загружен");
-          setShowErrorToast(true);
-          return;
-        }
-
-        // Инициализируем Adsgram
-        const adController = window.Adsgram.init({ blockId: "18088" });
-
-        if (!adController) {
-          console.error("❌ Не удалось инициализировать Adsgram");
-          setShowErrorToast(true);
-          return;
-        }
-
-        // Показываем рекламу
-        await adController
-          .show()
-          .then(() => {
-            // Реклама просмотрена успешно
-            onAdReward(task);
-          })
-          .catch((result) => {
-            // Ошибка при показе рекламы
-            onAdError(result);
-          });
-      } catch (error) {
-        console.error("❌ Ошибка показа рекламы:", error);
-        setShowErrorToast(true);
+  // Хук для показа CPM рекламы (Посмотреть рекламу)
+  const showCPMAd = useAdsgram({
+    blockId: "18010",
+    onReward: () => {
+      if (currentCPMTask) {
+        onAdReward(currentCPMTask);
       }
     },
-    [onAdReward, onAdError]
+    onError: onAdError,
+  });
+
+  // Обработчик клика на CPM задание (Посмотреть рекламу)
+  const handleCPMTaskClick = useCallback(
+    async (task) => {
+      setCurrentCPMTask(task);
+      // Показываем рекламу через хук
+      await showCPMAd();
+    },
+    [showCPMAd]
   );
 
   // Загрузка заданий из API при монтировании и при повторном посещении страницы
@@ -369,24 +355,7 @@ const TasksPage = ({ onPopupStateChange }) => {
                     )}
                   </div>
                 </div>
-                {/* Для CPC заданий показываем компонент Task после клика на "Выполнить" */}
-                {task.apiData?.type === "banners-cpc" &&
-                activeCPCTask === task.id ? (
-                  <Task
-                    blockId="task-18088"
-                    debug="true"
-                    onReward={(detail) => {
-                      console.log("✅ CPC задание выполнено:", detail);
-                      onAdReward(task);
-                      setActiveCPCTask(null);
-                    }}
-                    rewardText={`${task.energy} энергии`}
-                    buttonText="Кликнуть на баннер"
-                    claimText="Забрать награду"
-                    doneText="Выполнено"
-                  />
-                ) : (
-                  <button
+                <button
                     className={styles.taskButton}
                     onClick={() => {
                       // Проверяем, достигнут ли прогресс
@@ -399,13 +368,14 @@ const TasksPage = ({ onPopupStateChange }) => {
                         task.apiData?.status !== "CLAIMED" &&
                         task.apiData?.status !== "WAITING"
                       ) {
-                        // Для CPC заданий показываем компонент Task
+                        // Для CPC заданий открываем попап с баннером
                         if (task.apiData?.type === "banners-cpc") {
-                          setActiveCPCTask(task.id);
+                          setSelectedCPCTask(task);
+                          onPopupStateChange?.(true);
                         }
-                        // Для CPM заданий показываем рекламу сразу
+                        // Для CPM заданий показываем рекламу через хук
                         else if (task.apiData?.type === "banners-cpm") {
-                          handleBannerTaskClick(task);
+                          handleCPMTaskClick(task);
                         }
                         // Для других заданий открываем попап
                         else {
@@ -453,13 +423,29 @@ const TasksPage = ({ onPopupStateChange }) => {
                       ? "В обработке"
                       : "Выполнить"}
                   </button>
-                )}
               </div>
             ))
           )}
         </div>
       </div>
 
+      {/* Попап для CPC заданий (Кликни на баннер) */}
+      {selectedCPCTask && (
+        <BannerClickPopup
+          task={selectedCPCTask}
+          onClose={() => {
+            setSelectedCPCTask(null);
+            onPopupStateChange?.(false);
+          }}
+          onReward={(task) => {
+            onAdReward(task);
+            setSelectedCPCTask(null);
+            onPopupStateChange?.(false);
+          }}
+        />
+      )}
+
+      {/* Попап для других заданий */}
       {selectedTask && !selectedTask.apiData?.type?.startsWith("banners-") && (
         <TaskPopup
           task={selectedTask}
