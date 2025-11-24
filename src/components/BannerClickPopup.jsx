@@ -1,9 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { TadsWidget } from "react-tads-widget";
 import styles from "./BannerClickPopup.module.scss";
 import { Task } from "./Task";
+import providerManager from "../services/adProviders/ProviderManager.js";
 
 const BannerClickPopup = ({ task, onClose, onReward }) => {
+  // По умолчанию показываем Tads (наивысший приоритет)
+  const [useTads, setUseTads] = useState(true);
+  const [tadsProvider, setTadsProvider] = useState(null);
+  const [tadsRewarded, setTadsRewarded] = useState(false); // Флаг, что Tads уже наградил
+
+  useEffect(() => {
+    // Инициализируем Tads провайдер
+    const initTads = async () => {
+      await providerManager.initialize();
+      const provider = providerManager.getProvider("tads");
+      if (provider) {
+        setTadsProvider(provider);
+      }
+    };
+    initTads();
+  }, []);
+
   if (!task) return null;
+
+  const handleTadsReward = () => {
+    console.log("✅ Tads CPC задание выполнено - клик на рекламу");
+    // Устанавливаем флаг, что Tads уже наградил - Adsgram не должен показываться
+    setTadsRewarded(true);
+    if (tadsProvider) {
+      tadsProvider.onReward();
+    }
+    if (onReward) {
+      onReward(task, "tads");
+    }
+  };
+
+  const handleTadsNotFound = () => {
+    console.warn("❌ Tads: реклама не найдена, переключаемся на Adsgram");
+    if (tadsProvider) {
+      tadsProvider.onAdsNotFound();
+    }
+    // Если Tads не нашел рекламу И еще не наградил, пробуем Adsgram
+    if (!tadsRewarded) {
+      setUseTads(false);
+    }
+  };
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -24,20 +66,30 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
         </button>
 
         <div className={styles.taskContainer}>
-          <Task
-            blockId="task-18088"
-            debug="true"
-            onReward={(detail) => {
-              console.log("✅ CPC задание выполнено:", detail);
-              if (onReward) {
-                onReward(task);
-              }
-            }}
-            rewardText={`${task.energy} энергии`}
-            buttonText="Кликнуть на баннер"
-            claimText="Забрать награду"
-            doneText="Выполнено"
-          />
+          {useTads && !tadsRewarded ? (
+            <TadsWidget
+              id="972"
+              type="static"
+              debug={false}
+              onClickReward={handleTadsReward}
+              onAdsNotFound={handleTadsNotFound}
+            />
+          ) : !tadsRewarded ? (
+            <Task
+              blockId="task-18088"
+              debug="true"
+              onReward={(detail) => {
+                console.log("✅ Adsgram CPC задание выполнено:", detail);
+                if (onReward) {
+                  onReward(task, "adsgram-cpc");
+                }
+              }}
+              rewardText={`${task.energy} энергии`}
+              buttonText="Кликнуть на баннер"
+              claimText="Забрать награду"
+              doneText="Выполнено"
+            />
+          ) : null}
         </div>
       </div>
     </div>

@@ -158,7 +158,8 @@ const TasksPage = ({ onPopupStateChange }) => {
       // Определяем провайдера в зависимости от типа задания и использованного провайдера
       let provider;
       if (task.apiData?.type === "banners-cpc") {
-        provider = "adsgram-cpc";
+        // Для CPC используем провайдер, который показал рекламу, или tads по умолчанию (первый в очереди)
+        provider = usedProvider || "tads";
       } else {
         // Для CPM используем провайдер, который показал рекламу
         provider = usedProvider || "adextra"; // По умолчанию adextra (первый в очереди)
@@ -487,8 +488,8 @@ const TasksPage = ({ onPopupStateChange }) => {
             setSelectedCPCTask(null);
             onPopupStateChange?.(false);
           }}
-          onReward={(task) => {
-            onAdReward(task);
+          onReward={(task, usedProvider) => {
+            onAdReward(task, usedProvider);
             setSelectedCPCTask(null);
             onPopupStateChange?.(false);
           }}

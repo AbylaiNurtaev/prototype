@@ -2,6 +2,7 @@ import AdsgramCPC from "./providers/AdsgramCPC.js";
 import AdsgramCPM from "./providers/AdsgramCPM.js";
 import Adexium from "./providers/Adexium.js";
 import Adextra from "./providers/Adextra.js";
+import Tads from "./providers/Tads.js";
 
 /**
  * Менеджер рекламных провайдеров
@@ -50,6 +51,10 @@ class ProviderManager {
       "adextra",
       new Adextra({ ...defaultConfig, ...(configs["adextra"] || {}) })
     );
+    this.providers.set(
+      "tads",
+      new Tads({ ...defaultConfig, ...(configs["tads"] || {}) })
+    );
 
     if (fallbackMode) {
       console.log(
@@ -85,6 +90,7 @@ class ProviderManager {
       "adsgram-cpm": "adsgram-cpm",
       adexium: "adexium",
       adextra: "adextra",
+      tads: "tads",
     };
 
     return nameMap[name.toLowerCase()] || name.toLowerCase();
@@ -98,7 +104,8 @@ class ProviderManager {
   getProvidersForAction(actionType) {
     if (actionType === "click" || actionType === "cpc") {
       // Провайдеры для кликов (CPC)
-      return ["adsgram-cpc"];
+      // Приоритет: Tads -> AdsgramCPC
+      return ["tads", "adsgram-cpc"];
     } else {
       // Провайдеры для просмотров (CPM)
       // Приоритет: Adextra -> Adexium -> AdsgramCPM

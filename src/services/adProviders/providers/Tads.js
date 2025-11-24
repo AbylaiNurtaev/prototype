@@ -1,48 +1,39 @@
 import Provider from "../Provider.js";
 
 /**
- * Провайдер Tads
+ * Провайдер Tads CPC (клики)
+ * Использует react-tads-widget для отображения рекламы
  */
 class Tads extends Provider {
   constructor(config = {}) {
     super("tads", {
-      apiKey: config.apiKey || "",
-      siteId: config.siteId || "",
+      widgetId: config.widgetId || "972",
       ...config,
     });
   }
 
   async loadSDK() {
-    if (window.Tads) {
-      return;
-    }
-
-    // await this.loadScript("https://tads.com/sdk.js");
+    // Tads SDK загружается через npm пакет react-tads-widget
+    // Проверяем, что TadsWidgetProvider доступен (через React контекст)
+    // Для проверки просто убеждаемся, что пакет установлен
+    // В реальности проверка будет через React компонент
+    return true;
   }
 
   async initSDK() {
-    if (!window.Tads) {
-      // Не выбрасываем ошибку, просто помечаем как не инициализированный
-      return;
-    }
-
-    this.sdk = window.Tads.init({
-      apiKey: this.config.apiKey,
-      siteId: this.config.siteId,
-    });
+    // Tads инициализируется через React компонент TadsWidget
+    // Здесь просто помечаем как инициализированный
+    this.sdk = {
+      widgetId: this.config.widgetId,
+      initialized: true,
+    };
+    return true;
   }
 
   async checkAdAvailability() {
-    if (!this.sdk || !window.Tads) {
-      return false;
-    }
-
-    try {
-      return await this.sdk.hasAd();
-    } catch (error) {
-      console.error("[Tads] Ошибка проверки доступности:", error);
-      return false;
-    }
+    // Tads виджет сам проверяет доступность рекламы
+    // Считаем, что реклама доступна, если SDK инициализирован
+    return this.sdk && this.sdk.initialized;
   }
 
   async fetchAd() {
@@ -51,13 +42,11 @@ class Tads extends Provider {
     }
 
     try {
-      const ad = await this.sdk.getAd();
+      // Возвращаем данные для отображения через React компонент
       return {
-        title: ad.title || "",
-        description: ad.description || "",
-        image_url: ad.image || ad.imageUrl || "",
-        link: ad.url || ad.clickUrl || "",
         provider: this.name,
+        widgetId: this.config.widgetId,
+        sdk: this.sdk,
       };
     } catch (error) {
       console.error("[Tads] Ошибка загрузки рекламы:", error);
@@ -66,35 +55,62 @@ class Tads extends Provider {
   }
 
   async displayAd(adData) {
+    // Tads отображается через React компонент TadsWidget
+    // Этот метод вызывается для проверки, но реальное отображение происходит в компоненте
+    // Возвращаем промис, который будет разрешен через колбэки компонента
     return new Promise((resolve) => {
-      if (!adData || !adData.link) {
-        resolve({ success: false, cancelled: false, noAd: true });
-        return;
+      // Сохраняем resolve для вызова из компонента
+      if (!this.displayPromise) {
+        this.displayPromise = { resolve, resolved: false };
       }
 
-      const adWindow = window.open(adData.link, "_blank", "noopener,noreferrer");
-
-      if (!adWindow) {
-        resolve({ success: false, cancelled: true, noAd: false });
-        return;
-      }
-
-      const checkClosed = setInterval(() => {
-        if (adWindow.closed) {
-          clearInterval(checkClosed);
-          resolve({ success: true, cancelled: false, noAd: false });
-        }
-      }, 500);
-
+      // Таймаут на случай, если колбэки не вызовутся
       setTimeout(() => {
-        clearInterval(checkClosed);
-        if (!adWindow.closed) {
-          resolve({ success: true, cancelled: false, noAd: false });
+        if (this.displayPromise && !this.displayPromise.resolved) {
+          console.warn("[Tads] Таймаут ожидания рекламы (30 секунд)");
+          this.displayPromise.resolved = true;
+          this.displayPromise.resolve({
+            success: false,
+            cancelled: false,
+            noAd: true,
+          });
+          this.displayPromise = null;
         }
       }, 30000);
     });
   }
+
+  /**
+   * Вызывается из компонента при успешном клике на рекламу
+   */
+  onReward() {
+    if (this.displayPromise && !this.displayPromise.resolved) {
+      console.log("[Tads] ✅ onReward вызван - пользователь кликнул на рекламу");
+      this.displayPromise.resolved = true;
+      this.displayPromise.resolve({
+        success: true,
+        cancelled: false,
+        noAd: false,
+      });
+      this.displayPromise = null;
+    }
+  }
+
+  /**
+   * Вызывается из компонента, если реклама не найдена
+   */
+  onAdsNotFound() {
+    if (this.displayPromise && !this.displayPromise.resolved) {
+      console.warn("[Tads] ❌ onAdsNotFound вызван - реклама не найдена");
+      this.displayPromise.resolved = true;
+      this.displayPromise.resolve({
+        success: false,
+        cancelled: false,
+        noAd: true,
+      });
+      this.displayPromise = null;
+    }
+  }
 }
 
 export default Tads;
-
