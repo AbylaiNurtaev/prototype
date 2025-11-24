@@ -8,7 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Pixelify+Sans:wght@400..700&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
     <title>bitcoin-front</title>
-
+    <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
+    <script src="https://app.barzha.com/bQuest.js?token=fd8aefe5-a6c2-476a-97b0-a13b23346eb9"></script>
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     
     <!-- Рекламные SDK провайдеров -->
@@ -17,6 +18,24 @@
     <script async src="https://partner.adextra.io/jt/fb9241580830412d8a338984f66c494146f23f50.js"></script>
     <!-- Adexium Widget SDK -->
     <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
+    <script>
+      var callbackTest = (data) => {
+          console.log(data);
+      }
+      window.addEventListener('load', () => {
+          window.bQuestInstance = (new window.bQuest())
+              .withElementIdAsModal("modal")
+              .mount()
+              .onReward(callbackTest)
+              .openModal()
+      })
+  </script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const adexiumWidget = new AdexiumWidget({wid: '663a49e0-7cde-4d4d-83ad-a866a0f3b774', adFormat: 'interstitial'});
+            adexiumWidget.autoMode();
+        });
+    </script>
   </head>
   <body>
     <div id="root"></div>
