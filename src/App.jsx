@@ -9,7 +9,7 @@ import ProfilePage from "./pages/profilePage/profilePage";
 import FriendsPage from "./pages/friendsPage/friendsPage";
 import NoTelegramNoPhone from "./components/NoTelegramNoPhone";
 import BlockedScreen from "./components/BlockedScreen";
-import { loginUser } from "./services/api";
+import { loginUser, claimReferralReward } from "./services/api";
 
 function App() {
   const [showPopup, setShowPopup] = useState(false);
@@ -64,6 +64,12 @@ function App() {
         console.log("✅ Авторизация успешна:", response);
         setUserData(response);
         setIsAuthenticated(true);
+
+        try {
+          await claimReferralReward();
+        } catch (refError) {
+          console.error("⚠️ [App] Не удалось отправить /ref/claim:", refError);
+        }
       } catch (error) {
         console.error("❌ Ошибка авторизации:", error);
 

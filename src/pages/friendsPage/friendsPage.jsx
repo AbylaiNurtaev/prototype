@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./friendsPage.module.scss";
 import ToastNotification from "../../components/ToastNotification";
+import { getReferralInfo } from "../../services/api";
 
 const FriendsPage = () => {
   const [showToast, setShowToast] = useState(false);
   const [isButtonDark, setIsButtonDark] = useState(false);
+  const [refLink, setRefLink] = useState("");
 
   const handleCopyClick = () => {
-    const linkToCopy = window.location.href;
+    const linkToCopy = refLink || window.location.href;
     navigator.clipboard.writeText(linkToCopy);
 
     setIsButtonDark(true);
@@ -17,6 +19,19 @@ const FriendsPage = () => {
 
     setShowToast(true);
   };
+
+  useEffect(() => {
+    const loadReferralInfo = async () => {
+      try {
+        const data = await getReferralInfo();
+        setRefLink(data?.ref_link || "");
+      } catch (error) {
+        console.error("❌ [FriendsPage] Не удалось получить реферальную ссылку");
+      }
+    };
+
+    loadReferralInfo();
+  }, []);
 
   return (
     <div className={styles.page}>

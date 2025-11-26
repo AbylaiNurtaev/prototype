@@ -376,3 +376,59 @@ export const getLeaders = async (filter = "month", testMode = true) => {
     throw error;
   }
 };
+
+/**
+ * Реферальная информация пользователя
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getReferralInfo = async (testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    console.log("🤝 [API] Загружаем данные рефералок");
+
+    const response = await axiosInstance.get("/ref/user", {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    console.log("🔗 [API] Реферальные данные:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "❌ Ошибка получения реферальных данных:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+/**
+ * Заявка на получение реферальной награды при входе
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const claimReferralReward = async (testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    console.log("🪙 [API] Отправляем запрос /ref/claim");
+
+    const response = await axiosInstance.post("/ref/claim", null, {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    console.log("✅ [API] /ref/claim ответ:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "❌ Ошибка запроса /ref/claim:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
