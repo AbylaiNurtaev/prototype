@@ -4,456 +4,10 @@ import LeaderPopup from "../../components/LeaderPopup";
 import { getLeaders } from "../../services/api";
 
 const LeadersPage = ({ onPopupStateChange }) => {
-  // Данные лидеров (можно будет заменить на данные из API)
-  // Порядок: второй, первый, третий (для отображения: слева, центр, справа)
-  const leaders = [
-    {
-      id: 2,
-      userName: "Max",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      score: 2250,
-      position: 2,
-      place: 2,
-      balanceBtc: 3280,
-      balanceEnergy: 12,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "210",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "31 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "8",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "412 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "3420",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "95$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 1,
-      userName: "VLAD",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      score: 2900,
-      position: 1,
-      place: 1,
-      balanceBtc: 3280,
-      balanceEnergy: 12,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "193",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "27 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "6",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "365 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "3280",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "89$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 3,
-      userName: "Damir ",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      score: 1998,
-      position: 3,
-      place: 3,
-      balanceBtc: 2990,
-      balanceEnergy: 10,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "168",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "21 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "5",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "289 500",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "2980",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "72$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-  ];
-
-  const otherLeaders = [
-    {
-      id: 4,
-      userName: "Sergey",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1850,
-      usd: "(92$)",
-      place: 4,
-      balanceBtc: 2850,
-      balanceEnergy: 11,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "180",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "24 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "7",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "255 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "2450",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "64$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 5,
-      userName: "Anastasia",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1720,
-      usd: "($86)",
-      place: 5,
-      balanceBtc: 2700,
-      balanceEnergy: 9,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "172",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "22 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "6",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "243 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "2320",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "58$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 6,
-      userName: "Kirill",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1640,
-      usd: "($82)",
-      place: 6,
-      balanceBtc: 2620,
-      balanceEnergy: 8,
-      aiAgentActive: false,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "168",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "19 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "4",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "220 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "2180",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "41$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 7,
-      userName: "Olga",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1580,
-      usd: "($79)",
-      place: 7,
-      balanceBtc: 2540,
-      balanceEnergy: 8,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "150",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "18 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "6",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "204 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "2050",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "54$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 8,
-      userName: "Andrey",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1475,
-      usd: "($73)",
-      place: 8,
-      balanceBtc: 2460,
-      balanceEnergy: 7,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "142",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "16 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "4",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "198 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "1960",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "47$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 9,
-      userName: "Irina",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1405,
-      usd: "($70)",
-      place: 9,
-      balanceBtc: 2390,
-      balanceEnergy: 7,
-      aiAgentActive: false,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "135",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "15 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "5",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "188 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "1885",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "39$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-    {
-      id: 10,
-      userName: "Dmitry",
-      avatar: "/friends/avatar.png",
-      cover: "/friends/avatar.png",
-      btc: 1360,
-      usd: "($68)",
-      place: 10,
-      balanceBtc: 2310,
-      balanceEnergy: 6,
-      aiAgentActive: true,
-      stats: [
-        {
-          icon: "/mine-icons/wallet.png",
-          value: "128",
-          label: "Найдено кошельков",
-        },
-        {
-          icon: "/exchange/usdt.png",
-          value: "14 $",
-          label: "Сумма выводов",
-        },
-        {
-          icon: "/mine-icons/friends.svg",
-          value: "4",
-          label: "Количество друзей",
-        },
-        {
-          icon: "/mine-icons/bitcoin.svg",
-          value: "179 000",
-          label: "Добыто биткоинов",
-        },
-        {
-          icon: "/mine-icons/friends-income.svg",
-          value: "1800",
-          label: "Доход с друзей",
-        },
-        {
-          icon: "/profile/ai.png",
-          value: "36$",
-          label: "Добыто ИИ-агентом",
-        },
-      ],
-    },
-  ];
-
   const [activeTab, setActiveTab] = useState("month");
   const [selectedLeader, setSelectedLeader] = useState(null);
+  const [leaders, setLeaders] = useState([]);
+  const [userInfo, setUserInfo] = useState(null);
 
   const handleTabClick = (tab) => () => setActiveTab(tab);
   const handleLeaderClick = (leader) => () => {
@@ -503,6 +57,27 @@ const LeadersPage = ({ onPopupStateChange }) => {
         });
         const response = await getLeaders(filterParam);
         console.log("📈 [LeadersPage] Ответ от API /leaders:", response);
+
+        const apiLeaders = response?.leaders || [];
+
+        const mappedLeaders = apiLeaders.map((item, index) => ({
+          id: item.user_id,
+          userName: item.name,
+          avatar: item.photo_url || "/friends/avatar.png",
+          cover: item.photo_url || "/friends/avatar.png",
+          score: item.amount,
+          btc: item.amount,
+          usd: "",
+          place: index + 1,
+          position: index + 1,
+          balanceBtc: item.amount,
+          balanceEnergy: 0,
+          aiAgentActive: false,
+          stats: [],
+        }));
+
+        setLeaders(mappedLeaders);
+        setUserInfo(response?.user || null);
       } catch (error) {
         console.error("❌ [LeadersPage] Ошибка загрузки лидеров:", error);
       }
@@ -510,6 +85,15 @@ const LeadersPage = ({ onPopupStateChange }) => {
 
     fetchLeaders();
   }, [activeTab]);
+
+  const topThree = leaders.slice(0, 3);
+  const orderedTopThree =
+    topThree.length === 3
+      ? [...topThree].sort((a, b) => {
+          const order = [2, 1, 3];
+          return order.indexOf(a.position) - order.indexOf(b.position);
+        })
+      : topThree;
 
   return (
     <div className={styles.leadersPage}>
@@ -528,7 +112,7 @@ const LeadersPage = ({ onPopupStateChange }) => {
             className={styles.bannerBg}
           />
           <div className={styles.leadersContainer}>
-            {leaders.map((leader) => (
+            {orderedTopThree.map((leader) => (
               <div
                 key={leader.id}
                 className={styles.leaderCard}
@@ -606,11 +190,13 @@ const LeadersPage = ({ onPopupStateChange }) => {
               Все время
             </button>
           </div>
-          <div className={styles.controlsLabel}>Твое место: 666</div>
+          <div className={styles.controlsLabel}>
+            Твое место: {userInfo?.position ?? "—"}
+          </div>
         </div>
         <div className={styles.leadersList}>
           <div className={styles.listContainer}>
-            {otherLeaders.map((leader) => (
+            {leaders.slice(3).map((leader) => (
               <div
                 key={leader.id}
                 className={styles.listItem}
