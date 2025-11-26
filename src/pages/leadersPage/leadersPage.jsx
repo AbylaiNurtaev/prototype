@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "./leadersPage.module.scss";
 import LeaderPopup from "../../components/LeaderPopup";
+import { getLeaders } from "../../services/api";
 
 const LeadersPage = ({ onPopupStateChange }) => {
   // Данные лидеров (можно будет заменить на данные из API)
@@ -491,6 +492,24 @@ const LeadersPage = ({ onPopupStateChange }) => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [selectedLeader]);
+
+  useEffect(() => {
+    const filterParam = activeTab === "month" ? "month" : "all";
+
+    const fetchLeaders = async () => {
+      try {
+        console.log("📡 [LeadersPage] Загружаем таблицу лидеров", {
+          filter: filterParam,
+        });
+        const response = await getLeaders(filterParam);
+        console.log("📈 [LeadersPage] Ответ от API /leaders:", response);
+      } catch (error) {
+        console.error("❌ [LeadersPage] Ошибка загрузки лидеров:", error);
+      }
+    };
+
+    fetchLeaders();
+  }, [activeTab]);
 
   return (
     <div className={styles.leadersPage}>

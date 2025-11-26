@@ -221,7 +221,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
                 <div className={styles.skeletonLine}></div>
                 <div className={styles.skeletonLineShort}></div>
               </div>
-            </div>
+        </div>
           )}
           {!isLoading && (
             <>
@@ -239,9 +239,9 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
                 />
               )}
               {!providerRewarded && currentProvider === "adsgram-cpc" && (
-                <Task
-                  blockId="task-18088"
-                  debug="true"
+          <Task
+            blockId="task-18088"
+            debug="true"
                   onReward={handleAdsgramReward}
                 />
               )}

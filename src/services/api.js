@@ -169,6 +169,13 @@ export const getExternalTasks = async (provider, testMode = true) => {
       }
     );
 
+    if (provider === "subgram" || provider === "flyer") {
+      console.log(
+        `🧲 Внешние задания (${provider}):`,
+        response.data?.tasks || response.data
+      );
+    }
+
     return response.data;
   } catch (error) {
     throw error;
@@ -318,11 +325,14 @@ export const withdrawFunds = async (amount, testMode = true) => {
   try {
     const response = await axiosInstance.post(
       "/users/withdraws",
-      { amount },
+      { amount }, // Request body как JSON
       {
         params: {
           initData: initData,
           ...(testMode && { test: "true" }),
+        },
+        headers: {
+          "Content-Type": "application/json",
         },
       }
     );
@@ -331,6 +341,36 @@ export const withdrawFunds = async (amount, testMode = true) => {
   } catch (error) {
     console.error(
       "❌ Ошибка вывода средств:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+/**
+ * Получение таблицы лидеров
+ * @param {"all"|"month"} filter - Фильтр таблицы
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getLeaders = async (filter = "month", testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    console.log("📊 [API] Загружаем лидеров", { filter });
+
+    const response = await axiosInstance.get("/leaders", {
+      params: {
+        initData: initData,
+        filter,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    console.log("🏆 [API] Ответ лидеров:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "❌ Ошибка получения таблицы лидеров:",
       error.response?.data || error.message
     );
     throw error;

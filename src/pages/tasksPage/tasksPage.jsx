@@ -27,6 +27,11 @@ const TasksPage = ({ onPopupStateChange }) => {
     try {
       setLoading(true);
 
+      const getInitialLetter = (title = "") => {
+        const trimmed = title.trim();
+        return trimmed ? trimmed[0].toUpperCase() : "?";
+      };
+
       let bannerTasks = [];
       let sponsorTasks = [];
       let subgramTasks = [];
@@ -109,12 +114,15 @@ const TasksPage = ({ onPopupStateChange }) => {
         const isExternal =
           task.provider === "flyer" || task.provider === "subgram";
 
+        const taskName =
+          task.view_details?.title || task.details?.name || "Задание";
+
         // Определяем иконку в зависимости от типа
         let icon = "/tasks/channeltask.png"; // по умолчанию
 
         if (isExternal) {
           // Для внешних заданий используем icon из details
-          icon = task.details?.icon || "/tasks/channeltask.png";
+          icon = task.details?.icon || null;
         } else if (task.type === "banners-cpc") {
           icon = "/tasks/bannerclicktask.png";
         } else if (task.type === "banners-cpm") {
@@ -127,10 +135,17 @@ const TasksPage = ({ onPopupStateChange }) => {
           icon = task.details?.photo || "/tasks/channeltask.png";
         }
 
+        const shouldUseInitialAvatar =
+          isExternal && !(task.details?.icon || task.details?.photo);
+
         return {
           id: task.id,
-          name: task.view_details?.title || task.details?.name || "Задание",
-          icon: icon,
+          name: taskName,
+          icon: shouldUseInitialAvatar ? null : icon,
+          showInitialAvatar: shouldUseInitialAvatar,
+          initialLetter: shouldUseInitialAvatar
+            ? getInitialLetter(taskName)
+            : null,
           energy: task.rewards?.coins || 0,
           progress: `${task.user_progress || 0}/${task.target_progress || 1}`,
           // Сохраняем полные данные из API
@@ -374,11 +389,17 @@ const TasksPage = ({ onPopupStateChange }) => {
           ) : (
             tasks.map((task) => (
               <div key={task.id} className={styles.taskCard}>
-                <img
-                  src={task.icon}
-                  alt={task.name}
-                  className={styles.taskIcon}
-                />
+                {task.showInitialAvatar ? (
+                  <div className={styles.initialAvatar}>
+                    {task.initialLetter}
+                  </div>
+                ) : (
+                  <img
+                    src={task.icon}
+                    alt={task.name}
+                    className={styles.taskIcon}
+                  />
+                )}
                 <div className={styles.taskInfo}>
                   <div className={styles.taskName}>{task.name}</div>
                   <div className={styles.taskRewards}>

@@ -78,7 +78,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
     // Определяем blockId в зависимости от типа задания
     // Для CPC заданий используется формат "task-XXXXX", для CPM - просто цифры
-    const blockId = taskType === "banners-cpc" ? "task-18808" : "18010";
+    const blockId = taskType === "banners-cpc" ? "task-18088" : "18010";
 
     // Создаем элемент adsgram-task
     const adsgramElement = document.createElement("adsgram-task");
@@ -378,9 +378,15 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   ];
 
   // Для внешних используем icon и link, для спонсоров - photo и link
-  const taskPhoto = details.photo || details.icon || "/tasks/check.png";
+  const taskPhoto = details.photo || details.icon || null;
   const taskLink = viewDetails.link || details.link || "#";
   const buttonText = details.button_start_task_text || "Подписаться";
+  const isExternalProvider =
+    task.apiData?.provider === "flyer" || task.apiData?.provider === "subgram";
+  const showInitialAvatar = isExternalProvider && !taskPhoto;
+  const fallbackInitial = showInitialAvatar
+    ? (task.name?.trim()?.[0] || "?").toUpperCase()
+    : null;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -401,7 +407,15 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         </button>
 
         <div className={styles.iconContainer}>
-          <img src={taskPhoto} alt={task.name} className={styles.taskIcon} />
+          {showInitialAvatar ? (
+            <div className={styles.initialAvatar}>{fallbackInitial}</div>
+          ) : (
+            <img
+              src={taskPhoto || "/tasks/check.png"}
+              alt={task.name}
+              className={styles.taskIcon}
+            />
+          )}
         </div>
 
         <div className={styles.taskTitle}>{task.name}</div>
