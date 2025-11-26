@@ -1,5 +1,5 @@
 .modalOverlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -12,7 +12,6 @@
   align-items: center;
   padding: 40px 0 calc(env(safe-area-inset-bottom, 0px) + 24px);
   z-index: 20;
-  overflow-y: auto;
   box-sizing: border-box;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;

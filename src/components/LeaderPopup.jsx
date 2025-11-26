@@ -14,6 +14,39 @@ const LeaderPopup = ({ leader, onClose }) => {
 
   if (!leader) return null;
 
+  const placeholderStats = [
+    {
+      icon: "/mine-icons/wallet.png",
+      value: "—",
+      label: "Найдено кошельков",
+    },
+    {
+      icon: "/exchange/usdt.png",
+      value: "—",
+      label: "Сумма выводов",
+    },
+    {
+      icon: "/mine-icons/friends.svg",
+      value: "—",
+      label: "Количество друзей",
+    },
+    {
+      icon: "/mine-icons/bitcoin.svg",
+      value: leader.balanceBtc ?? "—",
+      label: "Добыто биткоинов",
+    },
+    {
+      icon: "/mine-icons/friends-income.svg",
+      value: "—",
+      label: "Доход с друзей",
+    },
+    {
+      icon: "/profile/ai.png",
+      value: "—",
+      label: "Добыто ИИ-агентом",
+    },
+  ];
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div
@@ -51,7 +84,7 @@ const LeaderPopup = ({ leader, onClose }) => {
         <div className={styles.modalHeader}>
           <img
             className={styles.modalHeaderImage}
-            src="/profile/avatar.svg"
+            src={leader.avatar || "/profile/avatar.svg"}
             alt={leader.userName}
           />
           <div className={styles.modalHeaderInfo}>
@@ -124,7 +157,10 @@ const LeaderPopup = ({ leader, onClose }) => {
 
           <div className={styles.modalStatsTitle}>Статистика игрока</div>
           <div className={styles.modalStatsGrid}>
-            {leader.stats.map((stat, index) => (
+            {(leader.stats && leader.stats.length > 0
+              ? leader.stats
+              : placeholderStats
+            ).map((stat, index) => (
               <div key={index} className={styles.modalStatCard}>
                 <div className={styles.modalStatIcon}>
                   <img src={stat.icon} alt="" />
