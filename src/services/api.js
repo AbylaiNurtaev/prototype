@@ -48,6 +48,7 @@ export const loginUser = async (testMode = true) => {
     );
 
     return response.data;
+    console.log(response.data);
   } catch (error) {
     throw error;
   }

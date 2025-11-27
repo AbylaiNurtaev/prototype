@@ -117,7 +117,7 @@ const ProfilePage = ({ userData }) => {
               <div className={styles.balanceDivider}></div>
               <div className={styles.balanceItem}>
                 <img
-                  src="/tasks/energy.png"
+                  src="/mine-icons/energy.png"
                   alt="energy"
                   className={styles.balanceIcon}
                 />

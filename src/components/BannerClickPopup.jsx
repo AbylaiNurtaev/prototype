@@ -5,8 +5,7 @@ import { Task } from "./Task";
 import providerManager from "../services/adProviders/ProviderManager.js";
 
 const BannerClickPopup = ({ task, onClose, onReward }) => {
-  // Приоритет: Adsgram -> Tads -> Barza
-  const [currentProvider, setCurrentProvider] = useState("adsgram-cpc"); // Начинаем с Adsgram
+  const [currentProvider, setCurrentProvider] = useState(null);
   const [providerRewarded, setProviderRewarded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef(null);
@@ -42,61 +41,60 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   }, []);
 
   useEffect(() => {
-    // Ускоряем проверку провайдеров - проверяем параллельно
     const checkProviders = async () => {
       await providerManager.initialize();
 
-      // Приоритет: Adsgram -> Tads -> Barza
-      // Проверяем все провайдеры параллельно
-      const [adsgramProvider, tadsProvider, barzaProvider] = await Promise.all([
-        providerManager.getProvider("adsgram-cpc"),
-        providerManager.getProvider("tads"),
-        providerManager.getProvider("barza"),
-      ]);
+      // Берем приоритет из ProviderManager для CPC
+      const providerOrder =
+        providerManager.getProvidersForAction("cpc") ||
+        providerManager.getProvidersForAction("click");
+
+      if (!providerOrder || providerOrder.length === 0) {
+        console.warn(
+          "[BannerClickPopup] providerOrder пустой, используем Adsgram по умолчанию"
+        );
+        setCurrentProvider("adsgram-cpc");
+        setTimeout(() => setIsLoading(false), 1500);
+        return;
+      }
+
+      // Получаем инстансы провайдеров параллельно
+      const instances = await Promise.all(
+        providerOrder.map((name) => providerManager.getProvider(name))
+      );
 
       // Проверяем доступность параллельно
-      const [isAdsgramAvailable, isTadsAvailable, isBarzaAvailable] =
-        await Promise.all([
-          adsgramProvider
-            ? adsgramProvider.isAdAvailable()
-            : Promise.resolve(false),
-          tadsProvider ? tadsProvider.isAdAvailable() : Promise.resolve(false),
-          barzaProvider
-            ? barzaProvider.isAdAvailable()
-            : Promise.resolve(false),
-        ]);
-
-      // Выбираем первый доступный по приоритету
-      if (isAdsgramAvailable) {
-        console.log("[BannerClickPopup] Adsgram доступен, показываем его");
-        setCurrentProvider("adsgram-cpc");
-        // Даем время на загрузку
-        setTimeout(() => setIsLoading(false), 1500);
-        return;
-      }
-
-      if (isTadsAvailable) {
-        console.log("[BannerClickPopup] Tads доступен, показываем его");
-        setCurrentProvider("tads");
-        // Даем время на загрузку
-        setTimeout(() => setIsLoading(false), 1500);
-        return;
-      }
-
-      if (isBarzaAvailable) {
-        console.log("[BannerClickPopup] Barza доступен, показываем его");
-        setCurrentProvider("barza");
-        // isLoading останется true до загрузки баннера
-        return;
-      }
-
-      // Если ни один провайдер недоступен, используем Adsgram как fallback
-      console.log(
-        "[BannerClickPopup] Ни один провайдер недоступен, используем Adsgram как fallback"
+      const availability = await Promise.all(
+        instances.map((instance) =>
+          instance ? instance.isAdAvailable() : Promise.resolve(false)
+        )
       );
-      setCurrentProvider("adsgram-cpc");
-      // Даем время на загрузку
-      setTimeout(() => setIsLoading(false), 2000);
+
+      // Ищем первый доступный по приоритету
+      const availableIndex = availability.findIndex(
+        (isAvailable) => isAvailable
+      );
+
+      const chosenProviderName =
+        availableIndex !== -1
+          ? providerOrder[availableIndex]
+          : providerOrder[0] || "adsgram-cpc";
+
+      console.log(
+        "[BannerClickPopup] Выбран провайдер из ProviderManager:",
+        chosenProviderName
+      );
+
+      setCurrentProvider(chosenProviderName);
+
+      // Для Adsgram и Tads сразу скрываем скелетон с задержкой,
+      // для Barza оставляем isLoading=true до фактической загрузки
+      if (
+        chosenProviderName === "adsgram-cpc" ||
+        chosenProviderName === "tads"
+      ) {
+        setTimeout(() => setIsLoading(false), 1500);
+      }
     };
 
     checkProviders();
@@ -175,8 +173,14 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   };
 
   const handleTadsNotFound = () => {
-    console.warn("❌ Tads: реклама не найдена, пробуем Adsgram");
-    setCurrentProvider("adsgram-cpc");
+    console.warn("❌ Tads: реклама не найдена, пробуем следующий провайдер");
+    const order =
+      providerManager.getProvidersForAction("cpc") ||
+      providerManager.getProvidersForAction("click") ||
+      [];
+    const currentIndex = order.indexOf("tads");
+    const nextProvider = currentIndex !== -1 ? order[currentIndex + 1] : null;
+    setCurrentProvider(nextProvider || "adsgram-cpc");
   };
 
   const handleAdsgramReward = (detail) => {
@@ -221,7 +225,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
                 <div className={styles.skeletonLine}></div>
                 <div className={styles.skeletonLineShort}></div>
               </div>
-        </div>
+            </div>
           )}
           {!isLoading && (
             <>
@@ -239,9 +243,9 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
                 />
               )}
               {!providerRewarded && currentProvider === "adsgram-cpc" && (
-          <Task
-            blockId="task-18088"
-            debug="true"
+                <Task
+                  blockId="task-18088"
+                  debug="true"
                   onReward={handleAdsgramReward}
                 />
               )}
