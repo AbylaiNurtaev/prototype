@@ -7,6 +7,10 @@ const FriendsPage = () => {
   const [showToast, setShowToast] = useState(false);
   const [isButtonDark, setIsButtonDark] = useState(false);
   const [refLink, setRefLink] = useState("");
+  const [rewards, setRewards] = useState([]);
+  const [sumAmount, setSumAmount] = useState(0);
+  const [allAmount, setAllAmount] = useState("0.00");
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCopyClick = () => {
     const linkToCopy = refLink || window.location.href;
@@ -23,10 +27,19 @@ const FriendsPage = () => {
   useEffect(() => {
     const loadReferralInfo = async () => {
       try {
+        setIsLoading(true);
+        console.log("🤝 [FriendsPage] Загружаем реферальную информацию");
         const data = await getReferralInfo();
+        console.log("✅ [FriendsPage] Данные получены:", data);
+
         setRefLink(data?.ref_link || "");
+        setRewards(data?.rewards || []);
+        setSumAmount(data?.sum_amount || 0);
+        setAllAmount(data?.all_amount || "0.00");
       } catch (error) {
-        console.error("❌ [FriendsPage] Не удалось получить реферальную ссылку");
+        console.error("❌ [FriendsPage] Не удалось получить реферальную информацию:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -95,7 +108,7 @@ const FriendsPage = () => {
           <div className={styles.card}>
             <div className={styles.iconText}>
               <img src="/mine-icons/bitcoin.svg" alt="" />
-              <span>3280</span>
+              <span>{isLoading ? "—" : sumAmount}</span>
             </div>
             <div className={styles.titleContainer}>
               <div className={styles.title}>Заработано</div>
@@ -118,7 +131,7 @@ const FriendsPage = () => {
                   fill="#5264CE"
                 />
               </svg>
-              <span>6</span>
+              <span>{isLoading ? "—" : rewards.length}</span>
             </div>
             <div className={styles.titleContainer}>
               <div className={styles.title}>Друзей</div>
@@ -130,40 +143,81 @@ const FriendsPage = () => {
         </div>
         <div className={styles.friendsList}>
           <div className={styles.listTitle}>
-            Список друзей <span>(6)</span>
+            Список друзей <span>({isLoading ? "—" : rewards.length})</span>
           </div>
           <div className={styles.listContainer}>
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className={styles.listItem}>
-                <div className={styles.nameContainer}>
-                  <img
-                    className={styles.avatar}
-                    src="friends/avatar.png"
-                    alt=""
-                  />
-                  <div className={styles.name}>Damir Podchasov</div>
-                </div>
-                <div className={styles.btcContainer}>
-                  <img src="/mine-icons/bitcoin.svg" alt="" />
-                  <span>200</span>
-                  <p className={styles.btcText}>(0.1$)</p>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M5.5 11.854H12V5.354H11V10.147L4.854 4L4.146 4.708L10.293 10.854H5.5V11.854Z"
-                      fill="white"
-                    />
-                  </svg>
-                </div>
+            {isLoading ? (
+              <div style={{ color: "#fff", padding: "20px", textAlign: "center" }}>
+                Загрузка...
               </div>
-            ))}
+            ) : rewards.length === 0 ? (
+              <div style={{ color: "#fff", padding: "20px", textAlign: "center" }}>
+                У вас пока нет друзей
+              </div>
+            ) : (
+              rewards.map((reward, index) => (
+                <div key={reward.user_id || index} className={styles.listItem}>
+                  <div className={styles.nameContainer}>
+                    <img
+                      className={styles.avatar}
+                      src={reward.photo_url || "/friends/avatar.png"}
+                      alt={reward.name || "Friend"}
+                      onError={(e) => {
+                        e.target.src = "/friends/avatar.png";
+                      }}
+                    />
+                    <div className={styles.name}>{reward.name || "Неизвестный"}</div>
+                  </div>
+                  <div className={styles.btcContainer}>
+                    <img src="/mine-icons/bitcoin.svg" alt="" />
+                    <span>{reward.amount || 0}</span>
+                    <p className={styles.btcText}>
+                      ({reward.amount ? `$${(reward.amount * 0.012).toFixed(2)}` : "$0.00"})
+                    </p>
+                    {reward.link_user ? (
+                      <a
+                        href={reward.link_user}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "flex", alignItems: "center" }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M5.5 11.854H12V5.354H11V10.147L4.854 4L4.146 4.708L10.293 10.854H5.5V11.854Z"
+                            fill="white"
+                          />
+                        </svg>
+                      </a>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M5.5 11.854H12V5.354H11V10.147L4.854 4L4.146 4.708L10.293 10.854H5.5V11.854Z"
+                            fill="white"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
