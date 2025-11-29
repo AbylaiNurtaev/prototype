@@ -433,3 +433,38 @@ export const claimReferralReward = async (testMode = true) => {
     throw error;
   }
 };
+
+/**
+ * Получение информации о пользователе по user_id
+ * @param {number|string} userId - ID пользователя
+ * @param {boolean} testMode - Режим тестирования
+ */
+export const getUserInfo = async (userId, testMode = true) => {
+  const initData = getInitData();
+
+  try {
+    console.log(`👤 [API] Загружаем информацию о пользователе ${userId}`);
+    console.log(`🔗 [API] Путь: /info/${userId}`);
+
+    // Пробуем путь /info/{user_id} согласно документации
+    const response = await axiosInstance.get(`/info/${userId}`, {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
+
+    console.log(`✅ [API] Информация о пользователе ${userId}:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `❌ Ошибка получения информации о пользователе ${userId}:`,
+      error.response?.status,
+      error.response?.data || error.message
+    );
+    console.error(
+      `❌ [API] Полный URL: ${axiosInstance.defaults.baseURL}/info/${userId}`
+    );
+    throw error;
+  }
+};

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./profilePage.module.scss";
-import { getBalance } from "../../services/api";
+import { getBalance, getUserInfo } from "../../services/api";
 
 const ProfilePage = ({ userData }) => {
   const [userPhoto, setUserPhoto] = useState(null);
@@ -9,6 +9,7 @@ const ProfilePage = ({ userData }) => {
     btc: 0,
     energy: 0,
   });
+  const [userInfo, setUserInfo] = useState(null);
 
   // Загрузка баланса
   useEffect(() => {
@@ -49,6 +50,55 @@ const ProfilePage = ({ userData }) => {
     fetchBalance();
   }, []);
 
+  // Загрузка информации о пользователе через API
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        // Получаем user_id из userData или Telegram WebApp
+        let userId = null;
+
+        if (userData?.user_data?.id) {
+          userId = userData.user_data.id;
+        } else if (userData?.user_id) {
+          userId = userData.user_id;
+        } else {
+          const tg = window?.Telegram?.WebApp;
+          if (tg?.initDataUnsafe?.user?.id) {
+            userId = tg.initDataUnsafe.user.id;
+          }
+        }
+
+        if (!userId) {
+          console.warn("⚠️ ПРОФИЛЬ: user_id не найден, используем fallback данные");
+          // Fallback на существующую логику
+          return;
+        }
+
+        console.log(`👤 ПРОФИЛЬ: Загружаем информацию о пользователе ${userId}`);
+        const info = await getUserInfo(userId);
+        console.log("✅ ПРОФИЛЬ: Информация о пользователе получена:", info);
+
+        if (info) {
+          setUserInfo(info);
+
+          // Обновляем фото и имя из API
+          if (info.photo_url) {
+            setUserPhoto(info.photo_url);
+          }
+
+          const displayName =
+            info.name || info.username || info.first_name || "user";
+          setUserName(displayName);
+        }
+      } catch (error) {
+        console.error("❌ ПРОФИЛЬ: Ошибка загрузки информации о пользователе:", error);
+        // Fallback на существующую логику при ошибке
+      }
+    };
+
+    fetchUserInfo();
+  }, [userData]);
+
   useEffect(() => {
     console.log("📊 ProfilePage - userData из API:", userData);
 
@@ -59,35 +109,40 @@ const ProfilePage = ({ userData }) => {
         const apiUser = userData.user_data;
         console.log("✅ Используем данные из API:", apiUser);
 
-        if (apiUser.photo_url) {
-          setUserPhoto(apiUser.photo_url);
-        }
+        // Используем данные только если getUserInfo еще не загрузил их
+        if (!userInfo) {
+          if (apiUser.photo_url) {
+            setUserPhoto(apiUser.photo_url);
+          }
 
-        const displayName =
-          apiUser.name || apiUser.username || apiUser.first_name || "user";
-        setUserName(displayName);
+          const displayName =
+            apiUser.name || apiUser.username || apiUser.first_name || "user";
+          setUserName(displayName);
+        }
         return;
       }
     }
 
-    // Fallback на Telegram WebApp данные
-    const tg = window?.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      const user = tg.initDataUnsafe?.user;
+    // Fallback на Telegram WebApp данные только если нет userInfo
+    if (!userInfo) {
+      const tg = window?.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        const user = tg.initDataUnsafe?.user;
 
-      if (user) {
-        console.log("✅ Используем данные из Telegram WebApp:", user);
+        if (user) {
+          console.log("✅ Используем данные из Telegram WebApp:", user);
 
-        if (user.photo_url) {
-          setUserPhoto(user.photo_url);
+          if (user.photo_url) {
+            setUserPhoto(user.photo_url);
+          }
+
+          const displayName = user.first_name || user.username || "user";
+          setUserName(displayName);
         }
-
-        const displayName = user.first_name || user.username || "user";
-        setUserName(displayName);
       }
     }
-  }, [userData]);
+  }, [userData, userInfo]);
 
   return (
     <div className={styles.profilePage}>
@@ -112,7 +167,9 @@ const ProfilePage = ({ userData }) => {
                   alt="bitcoin"
                   className={styles.balanceIcon}
                 />
-                <span className={styles.balanceNumber}>{balance.btc}</span>
+                <span className={styles.balanceNumber}>
+                  {userInfo?.earned_coins ?? balance.btc}
+                </span>
               </div>
               <div className={styles.balanceDivider}></div>
               <div className={styles.balanceItem}>
@@ -163,7 +220,9 @@ const ProfilePage = ({ userData }) => {
                 <img src="/mine-icons/bitcoin.svg" alt="bitcoin" />
               </div>
               <div className={styles.titleContainer}>
-                <div className={styles.cardTitle}>8999</div>
+                <div className={styles.cardTitle}>
+                  {userInfo?.earned_coins ?? "—"}
+                </div>
                 <div className={styles.cardSubtitle}>
                   <p>Добыто биткоинов</p>
                 </div>
@@ -186,7 +245,9 @@ const ProfilePage = ({ userData }) => {
                 </svg>
               </div>
               <div className={styles.titleContainer}>
-                <div className={styles.cardTitle}>6</div>
+                <div className={styles.cardTitle}>
+                  {userInfo?.friends_count ?? "—"}
+                </div>
                 <div className={styles.cardSubtitle}>
                   <p>Количество друзей</p>
                 </div>
@@ -198,7 +259,11 @@ const ProfilePage = ({ userData }) => {
                 <img src="/exchange/usdt.png" alt="energy" />
               </div>
               <div className={styles.titleContainer}>
-                <div className={styles.cardTitle}>27 $</div>
+                <div className={styles.cardTitle}>
+                  {userInfo?.withdraw_sum !== undefined
+                    ? `${userInfo.withdraw_sum} $`
+                    : "—"}
+                </div>
                 <div className={styles.cardSubtitle}>
                   <p>Сумма выводов</p>
                 </div>
@@ -253,7 +318,9 @@ const ProfilePage = ({ userData }) => {
                 <img src="/mine-icons/wallet.png" alt="wallet" />
               </div>
               <div className={styles.titleContainer}>
-                <div className={styles.cardTitle}>193</div>
+                <div className={styles.cardTitle}>
+                  {userInfo?.successful_consoles ?? "—"}
+                </div>
                 <div className={styles.cardSubtitle}>
                   <p>Найдено кошельков</p>
                 </div>

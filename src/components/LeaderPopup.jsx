@@ -1,7 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./LeaderPopup.module.scss";
+import { getUserInfo } from "../services/api";
 
 const LeaderPopup = ({ leader, onClose }) => {
+  const [userInfo, setUserInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -12,27 +16,74 @@ const LeaderPopup = ({ leader, onClose }) => {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
+  // Загрузка информации о лидере через API
+  useEffect(() => {
+    const fetchLeaderInfo = async () => {
+      if (!leader?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        console.log(`👤 [LeaderPopup] Загружаем информацию о лидере ${leader.id}`);
+        const info = await getUserInfo(leader.id);
+        console.log(`✅ [LeaderPopup] Информация о лидере получена:`, info);
+
+        if (info) {
+          setUserInfo(info);
+        }
+      } catch (error) {
+        console.error(
+          `❌ [LeaderPopup] Ошибка загрузки информации о лидере:`,
+          error
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderInfo();
+  }, [leader?.id]);
+
   if (!leader) return null;
+
+  // Используем данные из API, если они загружены, иначе используем данные из leader
+  const displayLeader = userInfo
+    ? {
+        ...leader,
+        userName: userInfo.name || userInfo.username || userInfo.first_name || leader.userName,
+        avatar: userInfo.photo_url || leader.avatar,
+        balanceBtc: userInfo.earned_coins ?? leader.balanceBtc,
+        balanceEnergy: userInfo.balance_energy || userInfo.wallet?.light || leader.balanceEnergy,
+        aiAgentActive: userInfo.ai_agent_active !== undefined ? userInfo.ai_agent_active : leader.aiAgentActive,
+        // Данные статистики из API
+        successful_consoles: userInfo.successful_consoles,
+        withdraw_sum: userInfo.withdraw_sum,
+        friends_count: userInfo.friends_count,
+        earned_coins: userInfo.earned_coins,
+      }
+    : leader;
 
   const placeholderStats = [
     {
       icon: "/mine-icons/wallet.png",
-      value: "—",
+      value: displayLeader.successful_consoles ?? "—",
       label: "Найдено кошельков",
     },
     {
       icon: "/exchange/usdt.png",
-      value: "—",
+      value: displayLeader.withdraw_sum ?? "—",
       label: "Сумма выводов",
     },
     {
       icon: "/mine-icons/friends.svg",
-      value: "—",
+      value: displayLeader.friends_count ?? "—",
       label: "Количество друзей",
     },
     {
       icon: "/mine-icons/bitcoin.svg",
-      value: leader.balanceBtc ?? "—",
+      value: displayLeader.earned_coins ?? displayLeader.balanceBtc ?? "—",
       label: "Добыто биткоинов",
     },
     {
@@ -84,11 +135,11 @@ const LeaderPopup = ({ leader, onClose }) => {
         <div className={styles.modalHeader}>
           <img
             className={styles.modalHeaderImage}
-            src={leader.avatar || "/profile/avatar.svg"}
-            alt={leader.userName}
+            src={displayLeader.avatar || "/profile/avatar.svg"}
+            alt={displayLeader.userName}
           />
           <div className={styles.modalHeaderInfo}>
-            <div className={styles.modalName}>{leader.userName}</div>
+            <div className={styles.modalName}>{displayLeader.userName}</div>
             <div className={styles.modalBalances}>
               <span className={styles.modalBalanceLabel}>Балансы:</span>
               <div className={styles.modalBalanceItem}>
@@ -98,7 +149,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                   className={styles.modalBalanceIcon}
                 />
                 <span className={styles.modalBalanceValue}>
-                  {leader.balanceBtc}
+                  {displayLeader.earned_coins ?? displayLeader.balanceBtc}
                 </span>
               </div>
               <div className={styles.modalBalanceDivider}></div>
@@ -109,14 +160,14 @@ const LeaderPopup = ({ leader, onClose }) => {
                   className={styles.modalBalanceIcon}
                 />
                 <span className={styles.modalBalanceValue}>
-                  {leader.balanceEnergy}
+                  {displayLeader.balanceEnergy}
                 </span>
               </div>
             </div>
             <button
               type="button"
               className={`${styles.modalAgentButton} ${
-                leader.aiAgentActive
+                displayLeader.aiAgentActive
                   ? styles.modalAgentButtonActive
                   : styles.modalAgentButtonInactive
               }`}
@@ -127,7 +178,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                 className={styles.modalAgentIcon}
               />
               <span className={styles.modalAgentText}>
-                AI - agent {leader.aiAgentActive ? "активен" : "не активен"}
+                AI - agent {displayLeader.aiAgentActive ? "активен" : "не активен"}
               </span>
               <svg
                 className={styles.modalAgentInfoIcon}
@@ -152,15 +203,12 @@ const LeaderPopup = ({ leader, onClose }) => {
 
         <div className={styles.modalBody}>
           <div className={styles.modalPlace}>
-            Место в списке: {leader.place}
+            Место в списке: {displayLeader.place}
           </div>
 
           <div className={styles.modalStatsTitle}>Статистика игрока</div>
           <div className={styles.modalStatsGrid}>
-            {(leader.stats && leader.stats.length > 0
-              ? leader.stats
-              : placeholderStats
-            ).map((stat, index) => (
+            {placeholderStats.map((stat, index) => (
               <div key={index} className={styles.modalStatCard}>
                 <div className={styles.modalStatIcon}>
                   <img src={stat.icon} alt="" />
