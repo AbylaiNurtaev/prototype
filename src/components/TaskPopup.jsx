@@ -14,6 +14,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   const [isChecking, setIsChecking] = useState(false);
   const [isLoadingBanner, setIsLoadingBanner] = useState(false);
   const [bannerData, setBannerData] = useState(null);
+  const [isRewardProcessed, setIsRewardProcessed] = useState(false);
   const adsgramTaskRef = useRef(null);
   const adsgramContainerRef = useRef(null);
 
@@ -31,6 +32,13 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
   // Обработчик успешного просмотра рекламы
   const handleBannerReward = useCallback(async () => {
+    // Защита от повторных вызовов
+    if (isRewardProcessed) {
+      console.warn("⛔ [TaskPopup] Награда уже обработана, игнорируем повторный вызов");
+      return;
+    }
+
+    setIsRewardProcessed(true);
     try {
       // Подтверждаем просмотр/клик на бэкенде
       const action =
@@ -68,6 +76,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     apiData.target_progress,
     onTaskCompleted,
     onTaskFailed,
+    isRewardProcessed,
   ]);
 
   // Инициализация компонента adsgram-task
@@ -179,7 +188,10 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
   // Обработчик для баннеров (клики и просмотры) - используем компонент adsgram-task
   const handleBannerAction = async () => {
-    if (isLoadingBanner || !adsgramTaskRef.current) return;
+    if (isLoadingBanner || !adsgramTaskRef.current || isRewardProcessed) {
+      console.warn("⛔ [TaskPopup] Реклама уже обрабатывается или награда уже получена");
+      return;
+    }
 
     setIsLoadingBanner(true);
     try {

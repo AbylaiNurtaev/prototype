@@ -8,6 +8,7 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   const [currentProvider, setCurrentProvider] = useState(null);
   const [providerRewarded, setProviderRewarded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const containerRef = useRef(null);
 
   // Скрываем кнопки Adsgram через глобальные стили
@@ -123,6 +124,11 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
 
               // Слушаем клик на баннер Barza
               const handleBarzaClick = () => {
+                if (isProcessing || providerRewarded) {
+                  console.warn("⛔ [BannerClickPopup] Реклама уже обрабатывается или награда уже получена");
+                  return;
+                }
+                setIsProcessing(true);
                 console.log("✅ Barza CPC задание выполнено - клик на рекламу");
                 setProviderRewarded(true);
                 if (onReward) {
@@ -165,6 +171,11 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   if (!task) return null;
 
   const handleTadsReward = () => {
+    if (isProcessing || providerRewarded) {
+      console.warn("⛔ [BannerClickPopup] Реклама уже обрабатывается или награда уже получена");
+      return;
+    }
+    setIsProcessing(true);
     console.log("✅ Tads CPC задание выполнено - клик на рекламу");
     setProviderRewarded(true);
     if (onReward) {
@@ -184,6 +195,11 @@ const BannerClickPopup = ({ task, onClose, onReward }) => {
   };
 
   const handleAdsgramReward = (detail) => {
+    if (isProcessing || providerRewarded) {
+      console.warn("⛔ [BannerClickPopup] Реклама уже обрабатывается или награда уже получена");
+      return;
+    }
+    setIsProcessing(true);
     console.log("✅ Adsgram CPC задание выполнено:", detail);
     setProviderRewarded(true);
     if (onReward) {

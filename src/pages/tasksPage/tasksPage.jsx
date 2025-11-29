@@ -21,6 +21,7 @@ const TasksPage = ({ onPopupStateChange }) => {
   const pageRef = useRef(null);
   const [selectedCPCTask, setSelectedCPCTask] = useState(null); // Для CPC задания с попапом
   const [currentCPMTask, setCurrentCPMTask] = useState(null); // Текущее CPM задание для рекламы
+  const [isCPMProcessing, setIsCPMProcessing] = useState(false); // Защита от повторных кликов для CPM
 
   // Функция загрузки заданий (нужна для handleBannerReward)
   const loadTasks = async () => {
@@ -232,7 +233,14 @@ const TasksPage = ({ onPopupStateChange }) => {
   // Обработчик клика на CPM задание (Посмотреть рекламу)
   const handleCPMTaskClick = useCallback(
     async (task) => {
+      // Защита от повторных кликов
+      if (isCPMProcessing) {
+        console.warn("⛔ [TasksPage] Реклама уже обрабатывается, игнорируем повторный клик");
+        return;
+      }
+
       try {
+        setIsCPMProcessing(true);
         setCurrentCPMTask(task);
 
         // Инициализируем менеджер провайдеров
@@ -257,8 +265,8 @@ const TasksPage = ({ onPopupStateChange }) => {
           console.warn("⚠️ Реклама не найдена у всех провайдеров");
           onAdError({ error: true, description: "Реклама не найдена" });
         } else if (result.cancelled) {
-          // Пользователь отменил просмотр
-          console.warn("⚠️ Просмотр рекламы отменен");
+          // Пользователь отменил просмотр или реклама уже показывается
+          console.warn("⚠️ Просмотр рекламы отменен или уже обрабатывается");
           onAdError({ error: true, description: "Просмотр отменен" });
         } else {
           onAdError({ error: true, description: "Неизвестная ошибка" });
@@ -266,9 +274,15 @@ const TasksPage = ({ onPopupStateChange }) => {
       } catch (error) {
         console.error("❌ Ошибка при показе рекламы:", error);
         onAdError(error);
+      } finally {
+        // Сбрасываем флаг обработки после завершения (с небольшой задержкой для безопасности)
+        setTimeout(() => {
+          setIsCPMProcessing(false);
+          setCurrentCPMTask(null);
+        }, 1000);
       }
     },
-    [onAdReward, onAdError]
+    [onAdReward, onAdError, isCPMProcessing]
   );
 
   // Загрузка заданий из API при монтировании и при повторном посещении страницы
