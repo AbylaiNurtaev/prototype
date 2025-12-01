@@ -95,8 +95,7 @@ function App() {
     const tg = window?.Telegram?.WebApp;
     if (!tg) return;
 
-    tg.ready();
-
+    // Логирование данных пользователя
     const user = tg.initDataUnsafe?.user;
     if (user) {
       console.log("Telegram User Data:", {
@@ -109,13 +108,7 @@ function App() {
       });
     }
 
-    tg.expand();
-    tg.enableClosingConfirmation();
-    tg.disableVerticalSwipes();
-
-    tg.setHeaderColor("#1a1a1a");
-    tg.setBackgroundColor("#1a1a1a");
-
+    // Обработчики событий для динамических изменений viewport и темы
     const applyVh = () => {
       const h = tg.viewportStableHeight || tg.viewportHeight;
       if (h) {
@@ -128,7 +121,6 @@ function App() {
       }
     };
 
-    applyVh();
     tg.onEvent("viewportChanged", applyVh);
 
     const handleThemeChange = () => {
@@ -136,7 +128,6 @@ function App() {
       document.documentElement.setAttribute("data-theme", theme);
     };
 
-    handleThemeChange();
     tg.onEvent("themeChanged", handleThemeChange);
 
     return () => {

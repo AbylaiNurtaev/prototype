@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@adsgram/react": "^1.0.2",
+    "@telegram-apps/sdk": "^3.11.8",
     "axios": "^1.13.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
