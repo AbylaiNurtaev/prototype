@@ -523,6 +523,12 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     setIsScanning(true);
     setShowPopup(false);
 
+    // Сразу обновляем баланс энергии (тратим 1 энергию)
+    setBalance((prev) => ({
+      ...prev,
+      energy: Math.max(0, prev.energy - 1),
+    }));
+
     const username = uiUser.username || "username";
     const displayName = uiUser.displayName || "Пользователь";
 
@@ -753,7 +759,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   return (
     <div className={styles.page}>
       <img
-        src="/profile/shineProfile.svg"
+        src="/profile/shineProfile.png"
         alt="shine"
         className={styles.shine}
       />

@@ -122,8 +122,8 @@ const TasksPage = ({ onPopupStateChange }) => {
         let icon = "/tasks/channeltask.png"; // по умолчанию
 
         if (isExternal) {
-          // Для внешних заданий используем icon из details
-          icon = task.details?.icon || null;
+          // Для внешних заданий используем icon из details, если нет - используем nameIcon.png
+          icon = task.details?.icon || "/tasks/nameIcon.png";
         } else if (task.type === "banners-cpc") {
           icon = "/tasks/bannerclicktask.png";
         } else if (task.type === "banners-cpm") {
@@ -132,21 +132,14 @@ const TasksPage = ({ onPopupStateChange }) => {
           task.type === "sponsor-subs" ||
           task.type === "sponsors-external"
         ) {
-          // Для спонсоров используем фото из API если есть
-          icon = task.details?.photo || "/tasks/channeltask.png";
+          // Для спонсоров используем фото из API если есть, если нет - используем nameIcon.png
+          icon = task.details?.photo || "/tasks/nameIcon.png";
         }
-
-        const shouldUseInitialAvatar =
-          isExternal && !(task.details?.icon || task.details?.photo);
 
         return {
           id: task.id,
           name: taskName,
-          icon: shouldUseInitialAvatar ? null : icon,
-          showInitialAvatar: shouldUseInitialAvatar,
-          initialLetter: shouldUseInitialAvatar
-            ? getInitialLetter(taskName)
-            : null,
+          icon: icon || "/tasks/nameIcon.png",
           energy: task.rewards?.coins || 0,
           progress: `${task.user_progress || 0}/${task.target_progress || 1}`,
           // Сохраняем полные данные из API
@@ -356,7 +349,7 @@ const TasksPage = ({ onPopupStateChange }) => {
   return (
     <div className={styles.page} ref={pageRef}>
       <img
-        src="/profile/shineProfile.svg"
+        src="/profile/shineProfile.png"
         alt="shine"
         className={styles.shine}
       />
@@ -403,17 +396,14 @@ const TasksPage = ({ onPopupStateChange }) => {
           ) : (
             tasks.map((task) => (
               <div key={task.id} className={styles.taskCard}>
-                {task.showInitialAvatar ? (
-                  <div className={styles.initialAvatar}>
-                    {task.initialLetter}
-                  </div>
-                ) : (
-                  <img
-                    src={task.icon}
-                    alt={task.name}
-                    className={styles.taskIcon}
-                  />
-                )}
+                <img
+                  src={task.icon || "/tasks/nameIcon.png"}
+                  alt={task.name}
+                  className={styles.taskIcon}
+                  onError={(e) => {
+                    e.target.src = "/tasks/nameIcon.png";
+                  }}
+                />
                 <div className={styles.taskInfo}>
                   <div className={styles.taskName}>{task.name}</div>
                   <div className={styles.taskRewards}>

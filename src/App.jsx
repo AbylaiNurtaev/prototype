@@ -16,6 +16,7 @@ function App() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isTaskPopupOpen, setIsTaskPopupOpen] = useState(false);
   const [isLeaderPopupOpen, setIsLeaderPopupOpen] = useState(false);
+  const [isFriendPopupOpen, setIsFriendPopupOpen] = useState(false);
   const [accessDenied, setAccessDenied] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -198,7 +199,7 @@ function App() {
       </div>
 
       <div style={{ display: currentPath === "/friends" ? "block" : "none" }}>
-        <FriendsPage />
+        <FriendsPage onPopupStateChange={setIsFriendPopupOpen} />
       </div>
 
       <BottomNavigation
@@ -206,6 +207,7 @@ function App() {
         isInputFocused={isInputFocused}
         isTaskPopupOpen={isTaskPopupOpen}
         isLeaderPopupOpen={isLeaderPopupOpen}
+        isFriendPopupOpen={isFriendPopupOpen}
       />
     </div>
   );

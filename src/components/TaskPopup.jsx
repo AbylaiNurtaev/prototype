@@ -444,8 +444,20 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         <div className={styles.buttonsContainer}>
           <button
             className={styles.subscribeButton}
-            onClick={() => {
-              window.open(taskLink, "_blank");
+            onClick={(e) => {
+              e.preventDefault();
+              const tg = window?.Telegram?.WebApp;
+              if (tg && taskLink && taskLink !== "#") {
+                // Используем Telegram WebApp API для открытия ссылки без перезагрузки
+                if (taskLink.startsWith("https://t.me/") || taskLink.startsWith("http://t.me/")) {
+                  tg.openTelegramLink?.(taskLink) || tg.openLink?.(taskLink);
+                } else {
+                  tg.openLink?.(taskLink);
+                }
+              } else if (taskLink && taskLink !== "#") {
+                // Fallback для случаев, когда Telegram WebApp недоступен
+                window.open(taskLink, "_blank", "noopener,noreferrer");
+              }
             }}
           >
             {buttonText}

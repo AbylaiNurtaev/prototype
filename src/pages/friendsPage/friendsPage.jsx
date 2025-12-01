@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import styles from "./friendsPage.module.scss";
 import ToastNotification from "../../components/ToastNotification";
+import FriendPopup from "../../components/FriendPopup";
 import { getReferralInfo } from "../../services/api";
 
-const FriendsPage = () => {
+const FriendsPage = ({ onPopupStateChange }) => {
   const [showToast, setShowToast] = useState(false);
   const [isButtonDark, setIsButtonDark] = useState(false);
   const [refLink, setRefLink] = useState("");
@@ -11,6 +12,7 @@ const FriendsPage = () => {
   const [sumAmount, setSumAmount] = useState(0);
   const [allAmount, setAllAmount] = useState("0.00");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFriend, setSelectedFriend] = useState(null);
 
   const handleCopyClick = () => {
     const linkToCopy = refLink || window.location.href;
@@ -22,6 +24,41 @@ const FriendsPage = () => {
     }, 1000);
 
     setShowToast(true);
+  };
+
+  const handleInviteClick = async () => {
+    const linkToShare = refLink || window.location.href;
+    const shareText = "Присоединяйся ко мне в этом приложении!";
+
+    // Проверяем, доступен ли Web Share API
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Приглашение в приложение",
+          text: shareText,
+          url: linkToShare,
+        });
+        console.log("✅ [FriendsPage] Ссылка успешно отправлена через Web Share API");
+      } catch (error) {
+        // Пользователь отменил шаринг или произошла ошибка
+        if (error.name !== "AbortError") {
+          console.error("❌ [FriendsPage] Ошибка при шаринге:", error);
+          // Fallback: копируем в буфер обмена
+          handleCopyClick();
+        }
+      }
+    } else {
+      // Если Web Share API недоступен, используем Telegram WebApp API
+      const tg = window?.Telegram?.WebApp;
+      if (tg && tg.openTelegramLink) {
+        // Формируем ссылку для Telegram
+        const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(linkToShare)}&text=${encodeURIComponent(shareText)}`;
+        tg.openTelegramLink(telegramLink);
+      } else {
+        // Fallback: копируем в буфер обмена
+        handleCopyClick();
+      }
+    }
   };
 
   useEffect(() => {
@@ -46,11 +83,31 @@ const FriendsPage = () => {
     loadReferralInfo();
   }, []);
 
+  const handleFriendClick = (friend) => () => {
+    setSelectedFriend(friend);
+    if (onPopupStateChange) {
+      onPopupStateChange(true);
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedFriend(null);
+    if (onPopupStateChange) {
+      onPopupStateChange(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.pageContent}>
         <div className={styles.inviteContainer}>
-          <div className={styles.inviteButton}>Пригласить друга</div>
+          <div 
+            className={styles.inviteButton}
+            onClick={handleInviteClick}
+            style={{ cursor: "pointer" }}
+          >
+            Пригласить друга
+          </div>
           <div
             className={`${styles.copyButton} ${
               isButtonDark ? styles.copyButtonDark : ""
@@ -156,7 +213,12 @@ const FriendsPage = () => {
               </div>
             ) : (
               rewards.map((reward, index) => (
-                <div key={reward.user_id || index} className={styles.listItem}>
+                <div 
+                  key={reward.user_id || index} 
+                  className={styles.listItem}
+                  onClick={handleFriendClick(reward)}
+                  style={{ cursor: "pointer" }}
+                >
                   <div className={styles.nameContainer}>
                     <img
                       className={styles.avatar}
@@ -221,6 +283,9 @@ const FriendsPage = () => {
           </div>
         </div>
       </div>
+      {selectedFriend && (
+        <FriendPopup friend={selectedFriend} onClose={closeModal} />
+      )}
     </div>
   );
 };

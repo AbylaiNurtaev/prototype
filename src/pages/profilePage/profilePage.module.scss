@@ -17,12 +17,15 @@
 
 .shine {
   position: fixed;
-  bottom: -230px;
-  left: -100px;
-  width: 100%;
-  height: 900px;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
   z-index: 0;
+  
+  /* Средние экраны (iPhone 12, iPhone 13, iPhone 14) */
+  @media screen and (min-height: 668px) and (max-height: 844px) {
+    width: calc(100vw + 154px);
+  }
 }
 
 .avatarSection {

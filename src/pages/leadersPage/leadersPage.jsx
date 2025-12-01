@@ -98,7 +98,7 @@ const LeadersPage = ({ onPopupStateChange }) => {
   return (
     <div className={styles.leadersPage}>
       <img
-        src="/profile/shineProfile.svg"
+        src="/profile/shineProfile.png"
         alt="shine"
         className={styles.shine}
       />

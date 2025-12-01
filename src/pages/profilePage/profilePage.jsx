@@ -147,7 +147,7 @@ const ProfilePage = ({ userData }) => {
   return (
     <div className={styles.profilePage}>
       <img
-        src="/profile/shineProfile.svg"
+        src="/profile/shineProfile.png"
         alt="shine"
         className={styles.shine}
       />

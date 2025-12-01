@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./LeaderPopup.module.scss";
 import { getUserInfo } from "../services/api";
 
-const LeaderPopup = ({ leader, onClose }) => {
+const FriendPopup = ({ friend, onClose }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -16,26 +16,26 @@ const LeaderPopup = ({ leader, onClose }) => {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  // Загрузка информации о лидере через API
+  // Загрузка информации о друге через API
   useEffect(() => {
-    const fetchLeaderInfo = async () => {
-      if (!leader?.id) {
+    const fetchFriendInfo = async () => {
+      if (!friend?.user_id) {
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        console.log(`👤 [LeaderPopup] Загружаем информацию о лидере ${leader.id}`);
-        const info = await getUserInfo(leader.id);
-        console.log(`✅ [LeaderPopup] Информация о лидере получена:`, info);
+        console.log(`👤 [FriendPopup] Загружаем информацию о друге ${friend.user_id}`);
+        const info = await getUserInfo(friend.user_id);
+        console.log(`✅ [FriendPopup] Информация о друге получена:`, info);
 
         if (info) {
           setUserInfo(info);
         }
       } catch (error) {
         console.error(
-          `❌ [LeaderPopup] Ошибка загрузки информации о лидере:`,
+          `❌ [FriendPopup] Ошибка загрузки информации о друге:`,
           error
         );
       } finally {
@@ -43,47 +43,54 @@ const LeaderPopup = ({ leader, onClose }) => {
       }
     };
 
-    fetchLeaderInfo();
-  }, [leader?.id]);
+    fetchFriendInfo();
+  }, [friend?.user_id]);
 
-  if (!leader) return null;
+  if (!friend) return null;
 
-  // Используем данные из API, если они загружены, иначе используем данные из leader
-  const displayLeader = userInfo
+  // Используем данные из API, если они загружены, иначе используем данные из friend
+  const displayFriend = userInfo
     ? {
-        ...leader,
-        userName: userInfo.name || userInfo.username || userInfo.first_name || leader.userName,
-        avatar: userInfo.photo_url || leader.avatar,
-        balanceBtc: userInfo.earned_coins ?? leader.balanceBtc,
-        balanceEnergy: userInfo.balance_energy || userInfo.wallet?.light || leader.balanceEnergy,
-        aiAgentActive: userInfo.ai_agent_active !== undefined ? userInfo.ai_agent_active : leader.aiAgentActive,
+        ...friend,
+        name: userInfo.name || userInfo.username || userInfo.first_name || friend.name,
+        photo_url: userInfo.photo_url || friend.photo_url,
+        balanceBtc: userInfo.earned_coins ?? friend.amount,
+        balanceEnergy: userInfo.balance_energy || userInfo.wallet?.light || 0,
+        aiAgentActive: userInfo.ai_agent_active !== undefined ? userInfo.ai_agent_active : false,
         // Данные статистики из API
         successful_consoles: userInfo.successful_consoles,
         withdraw_sum: userInfo.withdraw_sum,
         friends_count: userInfo.friends_count,
         earned_coins: userInfo.earned_coins,
       }
-    : leader;
+    : {
+        ...friend,
+        name: friend.name || "Неизвестный",
+        photo_url: friend.photo_url || "/profile/avatar.svg",
+        balanceBtc: friend.amount || 0,
+        balanceEnergy: 0,
+        aiAgentActive: false,
+      };
 
   const placeholderStats = [
     {
       icon: "/mine-icons/wallet.png",
-      value: displayLeader.successful_consoles ?? "—",
+      value: displayFriend.successful_consoles ?? "—",
       label: "Найдено кошельков",
     },
     {
       icon: "/exchange/usdt.png",
-      value: displayLeader.withdraw_sum ?? "—",
+      value: displayFriend.withdraw_sum ?? "—",
       label: "Сумма выводов",
     },
     {
       icon: "/mine-icons/friends.svg",
-      value: displayLeader.friends_count ?? "—",
+      value: displayFriend.friends_count ?? "—",
       label: "Количество друзей",
     },
     {
       icon: "/mine-icons/bitcoin.svg",
-      value: displayLeader.earned_coins ?? displayLeader.balanceBtc ?? "—",
+      value: displayFriend.earned_coins ?? displayFriend.balanceBtc ?? "—",
       label: "Добыто биткоинов",
     },
     {
@@ -141,11 +148,11 @@ const LeaderPopup = ({ leader, onClose }) => {
         <div className={styles.modalHeader}>
           <img
             className={styles.modalHeaderImage}
-            src={displayLeader.avatar || "/profile/avatar.svg"}
-            alt={displayLeader.userName}
+            src={displayFriend.photo_url || "/profile/avatar.svg"}
+            alt={displayFriend.name}
           />
           <div className={styles.modalHeaderInfo}>
-            <div className={styles.modalName}>{displayLeader.userName}</div>
+            <div className={styles.modalName}>{displayFriend.name}</div>
             <div className={styles.modalBalances}>
               <span className={styles.modalBalanceLabel}>Балансы:</span>
               <div className={styles.modalBalanceItem}>
@@ -155,7 +162,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                   className={styles.modalBalanceIcon}
                 />
                 <span className={styles.modalBalanceValue}>
-                  {displayLeader.earned_coins ?? displayLeader.balanceBtc}
+                  {displayFriend.earned_coins ?? displayFriend.balanceBtc}
                 </span>
               </div>
               <div className={styles.modalBalanceDivider}></div>
@@ -166,14 +173,14 @@ const LeaderPopup = ({ leader, onClose }) => {
                   className={styles.modalBalanceIcon}
                 />
                 <span className={styles.modalBalanceValue}>
-                  {displayLeader.balanceEnergy}
+                  {displayFriend.balanceEnergy}
                 </span>
               </div>
             </div>
             <button
               type="button"
               className={`${styles.modalAgentButton} ${
-                displayLeader.aiAgentActive
+                displayFriend.aiAgentActive
                   ? styles.modalAgentButtonActive
                   : styles.modalAgentButtonInactive
               }`}
@@ -184,7 +191,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                 className={styles.modalAgentIcon}
               />
               <span className={styles.modalAgentText}>
-                AI - agent {displayLeader.aiAgentActive ? "активен" : "не активен"}
+                AI - agent {displayFriend.aiAgentActive ? "активен" : "не активен"}
               </span>
               <svg
                 className={styles.modalAgentInfoIcon}
@@ -229,4 +236,5 @@ const LeaderPopup = ({ leader, onClose }) => {
   );
 };
 
-export default LeaderPopup;
+export default FriendPopup;
+
