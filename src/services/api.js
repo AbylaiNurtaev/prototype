@@ -77,12 +77,21 @@ export const getBalance = async (testMode = true) => {
 
 /**
  * Получение Live Feed для терминала
+ * @param {boolean} testMode - Режим тестирования
  */
-export const getLiveFeed = async () => {
+export const getLiveFeed = async (testMode = true) => {
+  const initData = getInitData();
+
   try {
-    const response = await axiosInstance.get("/console/live-feed");
+    const response = await axiosInstance.get("/console/live-feed", {
+      params: {
+        initData: initData,
+        ...(testMode && { test: "true" }),
+      },
+    });
     return response.data;
   } catch (error) {
+    console.error("❌ Ошибка получения Live Feed:", error.response?.data || error.message);
     throw error;
   }
 };

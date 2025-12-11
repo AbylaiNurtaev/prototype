@@ -28,6 +28,21 @@ function App() {
   const navigate = useNavigate();
   const currentPath = location.pathname;
 
+  // Предзагрузка картинок для попапов
+  useEffect(() => {
+    const preloadImages = [
+      "/mine-icons/found.png",
+      "/mine-icons/wallet.png",
+      "/mine-icons/bitcoin.svg",
+      "/mine-icons/popupbgfail.png",
+    ];
+
+    preloadImages.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   useEffect(() => {
     const checkAccess = () => {
       const tg = window?.Telegram?.WebApp;
@@ -119,7 +134,17 @@ function App() {
         document.body.style.height = `${h}px`;
         document.body.style.overflowY = "auto";
       }
+
+      // Обновляем safe-area сверху (высота панели Telegram)
+      const topInset = tg.safeAreaInset?.top ?? 0;
+      document.documentElement.style.setProperty(
+        "--tg-safe-area-top",
+        `${topInset}px`
+      );
     };
+
+    // Инициализируем safe-area и высоту при первом рендере
+    applyVh();
 
     tg.onEvent("viewportChanged", applyVh);
 

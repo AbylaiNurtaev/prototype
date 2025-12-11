@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import styles from "./SuccessToast.module.scss";
 
-const SuccessToast = ({ onClose, duration = 4000 }) => {
+const SuccessToast = ({
+  onClose,
+  duration = 4000,
+  message = "Ваш баланс успешно пополнен!",
+}) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -42,7 +46,7 @@ const SuccessToast = ({ onClose, duration = 4000 }) => {
             />
           </svg>
         </div>
-        <div className={styles.text}>Ваш баланс успешно пополнен!</div>
+        <div className={styles.text}>{message}</div>
         <button className={styles.closeButton} onClick={onClose}>
           <svg
             width="14"
@@ -69,4 +73,3 @@ const SuccessToast = ({ onClose, duration = 4000 }) => {
 };
 
 export default SuccessToast;
-

@@ -207,6 +207,9 @@ const ProfilePage = ({ userData }) => {
               </g>
             </svg>
           </button>
+          <div className={styles.appVersion}>
+            v{window.APP_VERSION || "0.1.2"}
+          </div>
         </div>
       </div>
 

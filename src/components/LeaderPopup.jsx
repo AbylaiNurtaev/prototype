@@ -55,7 +55,7 @@ const LeaderPopup = ({ leader, onClose }) => {
         userName: userInfo.name || userInfo.username || userInfo.first_name || leader.userName,
         avatar: userInfo.photo_url || leader.avatar,
         balanceBtc: userInfo.earned_coins ?? leader.balanceBtc,
-        balanceEnergy: userInfo.balance_energy || userInfo.wallet?.light || leader.balanceEnergy,
+        balanceEnergy: userInfo.balance_energy ?? userInfo.wallet?.light ?? leader.balanceEnergy ?? 0,
         aiAgentActive: userInfo.ai_agent_active !== undefined ? userInfo.ai_agent_active : leader.aiAgentActive,
         // Данные статистики из API
         successful_consoles: userInfo.successful_consoles,
@@ -166,7 +166,7 @@ const LeaderPopup = ({ leader, onClose }) => {
                   className={styles.modalBalanceIcon}
                 />
                 <span className={styles.modalBalanceValue}>
-                  {displayLeader.balanceEnergy}
+                  {displayLeader.balanceEnergy ?? "—"}
                 </span>
               </div>
             </div>

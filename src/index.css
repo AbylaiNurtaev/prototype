@@ -77,3 +77,27 @@ body {
   flex-direction: column;
   overscroll-behavior: none;
 }
+
+/* Блокировка поворота экрана - предупреждение в landscape режиме */
+@media screen and (orientation: landscape) {
+  body::before {
+    content: "Пожалуйста, поверните устройство в портретную ориентацию";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.95);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Manrope", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    padding: 20px;
+    z-index: 9999;
+    pointer-events: none;
+  }
+}

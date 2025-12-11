@@ -1,62 +1,65 @@
 # Настройка BunnyCDN для SPA (Single Page Application)
 
-## Проблема
-При обновлении страницы на маршрутах типа `/mining`, `/profile` и т.д. возникает ошибка 404, так как сервер не находит файл по этому пути.
+## Проблема: 404 при обновлении страницы
 
-## Решение
+BunnyCDN не поддерживает `.htaccess` файлы напрямую. Вместо этого нужно настроить **Edge Rules** в панели управления BunnyCDN.
 
-### Вариант 1: Настройка через панель управления BunnyCDN (Рекомендуется)
+## Решение: Edge Rules в BunnyCDN
 
-1. Войдите в панель управления BunnyCDN
-2. Перейдите в раздел вашей зоны `btc-prototype`
-3. Найдите раздел **"Edge Rules"** или **"Rules"**
-4. Создайте новое правило:
+### Шаг 1: Войди в панель BunnyCDN
+1. Зайди на https://bunny.net
+2. Перейди в **Pull Zones** → выбери зону `btc-prototype`
 
-   **Условие:**
-   - Если запрашиваемый URL не является существующим файлом (не заканчивается на `.js`, `.css`, `.png`, `.svg`, `.jpg`, `.ico` и т.д.)
+### Шаг 2: Настрой Edge Rules
+1. Перейди в раздел **Edge Rules**
+2. Нажми **Add Edge Rule**
+3. Настрой правило:
 
-   **Действие:**
-   - Перенаправить на `/index.html` с кодом 200 (не 301/302!)
+**Условие (Condition):**
+- **Type:** `URL`
+- **Operator:** `Does not match`
+- **Value:** `\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|xml|txt|pdf|zip)$`
 
-5. Сохраните правило
+**Действие (Action):**
+- **Type:** `Rewrite`
+- **Value:** `/index.html`
 
-### Вариант 2: Использование BunnyCDN API
+**Приоритет:** `1`
 
-Если у вас есть доступ к API, можно настроить правило через API:
+### Альтернативный вариант (через URL Rewrite)
 
-```bash
-curl -X POST "https://api.bunny.net/pullzone/{zoneId}/edgerules" \
-  -H "AccessKey: YOUR_ACCESS_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "ActionType": 0,
-    "TriggerMatchingType": 0,
-    "Triggers": [
-      {
-        "Type": 0,
-        "PatternMatchingType": 0,
-        "PatternMatches": ["*"],
-        "Parameter1": ""
-      }
-    ],
-    "ActionParameter1": "/index.html",
-    "ActionParameter2": "200"
-  }'
-```
+Если Edge Rules не работают, используй **URL Rewrite**:
 
-### Вариант 3: Файл _redirects
+**Условие:**
+- **Type:** `URL`
+- **Operator:** `Does not match`
+- **Value:** `\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|xml|txt|pdf|zip)$`
 
-Файл `_redirects` уже создан и загружен на сервер. Некоторые CDN автоматически читают этот файл, но BunnyCDN может не поддерживать его напрямую.
+**Действие:**
+- **Type:** `Rewrite`
+- **Value:** `/index.html`
+
+### Что это делает?
+
+Правило перенаправляет все запросы, которые **НЕ** являются статическими файлами (JS, CSS, изображения и т.д.), на `/index.html`. Это позволяет React Router обрабатывать маршруты на клиенте.
+
+### Примеры:
+
+- ✅ `/` → `/index.html` (работает)
+- ✅ `/mining` → `/index.html` (работает, React Router обработает)
+- ✅ `/tasks` → `/index.html` (работает, React Router обработает)
+- ✅ `/assets/index.js` → `/assets/index.js` (статический файл, не перенаправляется)
+- ✅ `/mine-icons/energy.svg` → `/mine-icons/energy.svg` (статический файл, не перенаправляется)
+
+## Файл .htaccess
+
+Файл `.htaccess` создан в `public/.htaccess` и будет скопирован в `dist/` при билде. Он будет работать, если BunnyCDN использует Apache на бэкенде, но **Edge Rules** - более надежное решение для BunnyCDN.
 
 ## Проверка
 
-После настройки:
-1. Откройте приложение: `https://btc-prototype.b-cdn.net/`
-2. Перейдите на любой маршрут (например, `/mining`)
-3. Обновите страницу (F5 или Cmd+R)
-4. Страница должна загрузиться без ошибки 404
-
-## Альтернативное решение
-
-Если настройка правил не работает, можно использовать Hash Router вместо Browser Router в React Router, но это изменит URL (будет `/#/mining` вместо `/mining`).
-
+После настройки Edge Rules:
+1. Загрузи новый билд: `npm run build && ./upload.sh`
+2. Открой приложение в браузере
+3. Перейди на любую страницу (например, `/mining`)
+4. Обнови страницу (F5 или Cmd+R)
+5. Страница должна загрузиться без 404 ошибки

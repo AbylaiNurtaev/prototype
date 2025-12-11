@@ -210,14 +210,14 @@ const ExchangePage = ({ onInputFocus }) => {
               src="/exchange/btc.svg"
               alt="BTC"
             />
-            <span>1</span>
+            <span>100</span>
             <span>=</span>
             <img
               className={styles.rateIcon}
               src="/exchange/usdt.png"
               alt="USDT"
             />
-            <span>{exchangeRate.toFixed(6)} $</span>
+            <span>{Number(exchangeRate.toFixed(6))} $</span>
           </div>
         </div>
       </div>

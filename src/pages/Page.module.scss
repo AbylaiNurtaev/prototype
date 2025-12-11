@@ -54,10 +54,8 @@
   line-height: 130%;
   text-align: center;
   color: #fff;
-  margin-top: 50px;
-  @media screen and (min-width: 425px) {
-    margin-top: 60px;
-  }
+  /* Центрируем с учётом панели Telegram + даём достаточный базовый отступ */
+  margin-top: calc(28px + (var(--tg-safe-area-top, 0px) / 2));
 }
 
 .balanceSection {
@@ -192,6 +190,12 @@ color: #fff;
     width: 161px;
     height: 130px;
 
+  }
+}
+
+@media (max-width: 400px) {
+  .largeHash {
+    right: 10px;
   }
 }
 
@@ -557,13 +561,20 @@ outline: none;
 }
 
 .terminalLogs {
-  padding: 40px 15px 75px 15px;
+  padding: 0 15px 75px 15px; /* убираем padding-top */
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column-reverse;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Пустой элемент для верхнего отступа в консоли */
+.terminalLogsSpacer {
+  height: 25px;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .logLine {
@@ -582,7 +593,7 @@ outline: none;
 
 .terminalInput {
   position: absolute;
-  bottom: 0;
+  bottom: -1px;
   left: 0;
   right: 0;
   height: 60px;
@@ -715,9 +726,15 @@ background: rgb(16, 16, 16);
 }
 
 .lightningIcon {
-  width: 15px;
-  height: 15px;
-  filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .searchNumber {
@@ -725,6 +742,12 @@ background: rgb(16, 16, 16);
   font-size: 14px;
   color: #fff;
   font-weight: 500;
+}
+
+.searchButtonImage {
+  width: 125px;
+  height: 38px;
+  object-fit: contain;
 }
 
 .searchResult {

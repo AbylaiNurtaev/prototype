@@ -18,14 +18,25 @@ const TasksPage = ({ onPopupStateChange }) => {
   const [loading, setLoading] = useState(true);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
+  const [showWaitingToast, setShowWaitingToast] = useState(false);
   const pageRef = useRef(null);
   const [selectedCPCTask, setSelectedCPCTask] = useState(null); // Для CPC задания с попапом
   const [currentCPMTask, setCurrentCPMTask] = useState(null); // Текущее CPM задание для рекламы
   const [isCPMProcessing, setIsCPMProcessing] = useState(false); // Защита от повторных кликов для CPM
 
+  // Флаг для защиты от одновременных загрузок
+  const isLoadingRef = useRef(false);
+
   // Функция загрузки заданий (нужна для handleBannerReward)
   const loadTasks = async () => {
+    // Защита от повторных одновременных вызовов
+    if (isLoadingRef.current) {
+      console.log("⏳ Загрузка заданий уже выполняется, пропускаем");
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
       setLoading(true);
 
       const getInitialLetter = (title = "") => {
@@ -97,13 +108,26 @@ const TasksPage = ({ onPopupStateChange }) => {
         ...flyerTasks,
       ];
 
-      // Сортируем: сначала невыполненные, потом завершенные и CLAIMED в конец
+      // Сортируем: сначала активные, потом DONE (готовые к сбору), потом CLAIMED в конец
       const sortedTasks = allTasks.sort((a, b) => {
+        const aIsClaimed = a.status === "CLAIMED";
+        const bIsClaimed = b.status === "CLAIMED";
+        const aIsDone = a.status === "DONE";
+        const bIsDone = b.status === "DONE";
         const aIsCompleted =
           a.status === "CLAIMED" || a.user_progress >= a.target_progress;
         const bIsCompleted =
           b.status === "CLAIMED" || b.user_progress >= b.target_progress;
 
+        // CLAIMED всегда в конце
+        if (aIsClaimed && !bIsClaimed) return 1;
+        if (!aIsClaimed && bIsClaimed) return -1;
+
+        // DONE после активных, но перед CLAIMED
+        if (aIsDone && !bIsDone && !bIsClaimed) return 1;
+        if (!aIsDone && bIsDone && !aIsClaimed) return -1;
+
+        // Остальные: завершенные после активных
         if (aIsCompleted && !bIsCompleted) return 1;
         if (!aIsCompleted && bIsCompleted) return -1;
         return 0;
@@ -122,8 +146,8 @@ const TasksPage = ({ onPopupStateChange }) => {
         let icon = "/tasks/channeltask.png"; // по умолчанию
 
         if (isExternal) {
-          // Для внешних заданий используем icon из details, если нет - используем nameIcon.png
-          icon = task.details?.icon || "/tasks/nameIcon.png";
+          // Для внешних заданий используем icon из details, если нет - используем nameIcon.svg
+          icon = task.details?.icon || "/tasks/nameIcon.svg";
         } else if (task.type === "banners-cpc") {
           icon = "/tasks/bannerclicktask.png";
         } else if (task.type === "banners-cpm") {
@@ -132,14 +156,14 @@ const TasksPage = ({ onPopupStateChange }) => {
           task.type === "sponsor-subs" ||
           task.type === "sponsors-external"
         ) {
-          // Для спонсоров используем фото из API если есть, если нет - используем nameIcon.png
-          icon = task.details?.photo || "/tasks/nameIcon.png";
+          // Для спонсоров используем фото из API если есть, если нет - используем nameIcon.svg
+          icon = task.details?.photo || "/tasks/nameIcon.svg";
         }
 
         return {
           id: task.id,
           name: taskName,
-          icon: icon || "/tasks/nameIcon.png",
+          icon: icon || "/tasks/nameIcon.svg",
           energy: task.rewards?.coins || 0,
           progress: `${task.user_progress || 0}/${task.target_progress || 1}`,
           // Сохраняем полные данные из API
@@ -152,6 +176,7 @@ const TasksPage = ({ onPopupStateChange }) => {
       console.error("❌ Ошибка загрузки заданий:", error);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -191,8 +216,25 @@ const TasksPage = ({ onPopupStateChange }) => {
         await claimTask(task.id, false);
       }
 
-      // Перезагружаем задания для обновления UI
-      await loadTasks();
+      // Обновляем только конкретное задание в списке вместо полной перезагрузки
+      setTasks((prevTasks) =>
+        prevTasks.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                apiData: {
+                  ...t.apiData,
+                  user_progress: updatedProgress,
+                  status:
+                    updatedProgress >= targetProgress
+                      ? "CLAIMED"
+                      : t.apiData.status,
+                },
+                progress: `${updatedProgress}/${targetProgress}`,
+              }
+            : t
+        )
+      );
 
       // Показываем toast об успехе
       console.log("🎉 Показываем toast об успехе");
@@ -228,7 +270,9 @@ const TasksPage = ({ onPopupStateChange }) => {
     async (task) => {
       // Защита от повторных кликов
       if (isCPMProcessing) {
-        console.warn("⛔ [TasksPage] Реклама уже обрабатывается, игнорируем повторный клик");
+        console.warn(
+          "⛔ [TasksPage] Реклама уже обрабатывается, игнорируем повторный клик"
+        );
         return;
       }
 
@@ -278,37 +322,9 @@ const TasksPage = ({ onPopupStateChange }) => {
     [onAdReward, onAdError, isCPMProcessing]
   );
 
-  // Загрузка заданий из API при монтировании и при повторном посещении страницы
+  // Загрузка заданий из API только при монтировании
   useEffect(() => {
-    // Загружаем задания при монтировании
     loadTasks();
-
-    // Обработчик события видимости страницы (когда пользователь возвращается на вкладку)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadTasks();
-      }
-    };
-
-    // Обработчик события завершения просмотра баннера
-    const handleBannerCompleted = () => {
-      loadTasks();
-    };
-
-    // Обработчик фокуса на окне (когда пользователь возвращается на страницу)
-    const handleFocus = () => {
-      loadTasks();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("bannerCompleted", handleBannerCompleted);
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("bannerCompleted", handleBannerCompleted);
-      window.removeEventListener("focus", handleFocus);
-    };
   }, []);
 
   // Обработчик успешного выполнения задания
@@ -322,13 +338,29 @@ const TasksPage = ({ onPopupStateChange }) => {
       pageRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // Показываем toast только если задание выполнено полностью
-    if (!isWaiting) {
+    // Показываем соответствующий toast
+    if (isWaiting) {
+      // Задание отправлено на проверку
+      setShowWaitingToast(true);
+    } else {
+      // Задание выполнено полностью
       setShowSuccessToast(true);
     }
 
-    // Перезагружаем список заданий
-    loadTasks();
+    // Обновляем только конкретное задание в списке вместо полной перезагрузки
+    setTasks((prevTasks) =>
+      prevTasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              apiData: {
+                ...t.apiData,
+                status: isWaiting ? "WAITING" : "CLAIMED",
+              },
+            }
+          : t
+      )
+    );
   };
 
   // Обработчик ошибки при выполнении задания
@@ -346,6 +378,37 @@ const TasksPage = ({ onPopupStateChange }) => {
     setShowErrorToast(true);
   };
 
+  // Обработчик сбора награды за задание со статусом DONE
+  const handleClaimDoneTask = async (task) => {
+    try {
+      console.log("🎁 Собираем награду за задание:", task.id);
+      
+      // Вызываем claimTask для получения награды
+      await claimTask(task.id, false);
+      
+      // Обновляем статус задания на CLAIMED
+      setTasks((prevTasks) =>
+        prevTasks.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                apiData: {
+                  ...t.apiData,
+                  status: "CLAIMED",
+                },
+              }
+            : t
+        )
+      );
+
+      // Показываем toast об успехе
+      setShowSuccessToast(true);
+    } catch (error) {
+      console.error("❌ Ошибка сбора награды:", error);
+      setShowErrorToast(true);
+    }
+  };
+
   return (
     <div className={styles.page} ref={pageRef}>
       <img
@@ -356,7 +419,14 @@ const TasksPage = ({ onPopupStateChange }) => {
       <div className={styles.pageContent}>
         <div className={styles.prototypeText}>prototype</div>
 
-        <div className={styles.banner}>
+        <div
+          className={styles.banner}
+          style={
+            showErrorToast
+              ? { borderTopLeftRadius: 15, borderTopRightRadius: 15 }
+              : undefined
+          }
+        >
           <div className={styles.bannerContent}>
             <img
               src="/tasks/energy.png"
@@ -371,6 +441,13 @@ const TasksPage = ({ onPopupStateChange }) => {
 
           {showSuccessToast && (
             <SuccessToast onClose={() => setShowSuccessToast(false)} />
+          )}
+
+          {showWaitingToast && (
+            <SuccessToast
+              onClose={() => setShowWaitingToast(false)}
+              message="Задание отправлено на проверку"
+            />
           )}
 
           {showErrorToast && (
@@ -397,11 +474,11 @@ const TasksPage = ({ onPopupStateChange }) => {
             tasks.map((task) => (
               <div key={task.id} className={styles.taskCard}>
                 <img
-                  src={task.icon || "/tasks/nameIcon.png"}
+                  src={task.icon || "/tasks/nameIcon.svg"}
                   alt={task.name}
                   className={styles.taskIcon}
                   onError={(e) => {
-                    e.target.src = "/tasks/nameIcon.png";
+                    e.target.src = "/tasks/nameIcon.svg";
                   }}
                 />
                 <div className={styles.taskInfo}>
@@ -435,6 +512,12 @@ const TasksPage = ({ onPopupStateChange }) => {
                 <button
                   className={styles.taskButton}
                   onClick={() => {
+                    // Если задание в статусе DONE, собираем награду
+                    if (task.apiData?.status === "DONE") {
+                      handleClaimDoneTask(task);
+                      return;
+                    }
+
                     // Проверяем, достигнут ли прогресс
                     const isCompleted =
                       task.apiData?.user_progress >=
@@ -443,7 +526,8 @@ const TasksPage = ({ onPopupStateChange }) => {
                     if (
                       !isCompleted &&
                       task.apiData?.status !== "CLAIMED" &&
-                      task.apiData?.status !== "WAITING"
+                      task.apiData?.status !== "WAITING" &&
+                      task.apiData?.status !== "DONE"
                     ) {
                       // Для CPC заданий открываем попап с баннером
                       if (task.apiData?.type === "banners-cpc") {
@@ -491,7 +575,9 @@ const TasksPage = ({ onPopupStateChange }) => {
                         : "1px solid #5264ce",
                   }}
                 >
-                  {task.apiData?.user_progress >= task.apiData?.target_progress
+                  {task.apiData?.status === "DONE"
+                    ? "Собрать"
+                    : task.apiData?.user_progress >= task.apiData?.target_progress
                     ? "Выполнено"
                     : task.apiData?.status === "CLAIMED"
                     ? "Выполнено"

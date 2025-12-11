@@ -17,7 +17,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   animation: slideIn 0.3s ease-out;
 }
 
@@ -34,9 +34,10 @@
 
 .toastContent {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 15px;
   flex: 1;
 }
 

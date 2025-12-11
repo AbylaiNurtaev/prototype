@@ -34,7 +34,9 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   const handleBannerReward = useCallback(async () => {
     // Защита от повторных вызовов
     if (isRewardProcessed) {
-      console.warn("⛔ [TaskPopup] Награда уже обработана, игнорируем повторный вызов");
+      console.warn(
+        "⛔ [TaskPopup] Награда уже обработана, игнорируем повторный вызов"
+      );
       return;
     }
 
@@ -147,7 +149,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
 
       if (isExternal) {
         // Для внешних заданий: check -> claim
-        const checkResult = await checkExternalTask(provider, task.id);
+        const checkResult = await checkExternalTask(provider, task.id, false);
         console.log("🔍 Результат проверки внешнего задания:", checkResult);
 
         // Если задание в обработке (WAITING), закрываем попап и обновляем список
@@ -160,11 +162,11 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
           return;
         }
 
-        const result = await claimExternalTask(provider, task.id);
+        const result = await claimExternalTask(provider, task.id, false);
         console.log("✅ Внешнее задание выполнено:", result);
       } else {
         // Для обычных заданий (banners, sponsors)
-        const result = await claimTask(task.id);
+        const result = await claimTask(task.id, false);
         console.log("✅ Задание выполнено:", result);
       }
 
@@ -189,7 +191,9 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
   // Обработчик для баннеров (клики и просмотры) - используем компонент adsgram-task
   const handleBannerAction = async () => {
     if (isLoadingBanner || !adsgramTaskRef.current || isRewardProcessed) {
-      console.warn("⛔ [TaskPopup] Реклама уже обрабатывается или награда уже получена");
+      console.warn(
+        "⛔ [TaskPopup] Реклама уже обрабатывается или награда уже получена"
+      );
       return;
     }
 
@@ -389,16 +393,14 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
     "Получи свою награду",
   ];
 
-  // Для внешних используем icon и link, для спонсоров - photo и link
-  const taskPhoto = details.photo || details.icon || null;
+  // Для попапа всегда используем ту же иконку, что и в родительском списке (task.icon),
+  // а уже потом пробуем photo/icon из details. Если ничего нет — fallback на nameIcon.
+  const taskPhoto =
+    task.icon || details.photo || details.icon || "/tasks/nameIcon.svg";
   const taskLink = viewDetails.link || details.link || "#";
   const buttonText = details.button_start_task_text || "Подписаться";
   const isExternalProvider =
     task.apiData?.provider === "flyer" || task.apiData?.provider === "subgram";
-  const showInitialAvatar = isExternalProvider && !taskPhoto;
-  const fallbackInitial = showInitialAvatar
-    ? (task.name?.trim()?.[0] || "?").toUpperCase()
-    : null;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -419,15 +421,7 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
         </button>
 
         <div className={styles.iconContainer}>
-          {showInitialAvatar ? (
-            <div className={styles.initialAvatar}>{fallbackInitial}</div>
-          ) : (
-            <img
-              src={taskPhoto || "/tasks/check.png"}
-              alt={task.name}
-              className={styles.taskIcon}
-            />
-          )}
+          <img src={taskPhoto} alt={task.name} className={styles.taskIcon} />
         </div>
 
         <div className={styles.taskTitle}>{task.name}</div>
@@ -447,15 +441,31 @@ const TaskPopup = ({ task, onClose, onTaskCompleted, onTaskFailed }) => {
             onClick={(e) => {
               e.preventDefault();
               const tg = window?.Telegram?.WebApp;
-              if (tg && taskLink && taskLink !== "#") {
+              if (!taskLink || taskLink === "#") return;
+
+              if (tg) {
                 // Используем Telegram WebApp API для открытия ссылки без перезагрузки
-                if (taskLink.startsWith("https://t.me/") || taskLink.startsWith("http://t.me/")) {
-                  tg.openTelegramLink?.(taskLink) || tg.openLink?.(taskLink);
+                if (
+                  taskLink.startsWith("https://t.me/") ||
+                  taskLink.startsWith("http://t.me/")
+                ) {
+                  // Для Telegram ссылок используем openTelegramLink
+                  if (tg.openTelegramLink) {
+                    tg.openTelegramLink(taskLink);
+                  } else if (tg.openLink) {
+                    tg.openLink(taskLink);
+                  }
                 } else {
-                  tg.openLink?.(taskLink);
+                  // Для внешних ссылок используем openLink
+                  if (tg.openLink) {
+                    tg.openLink(taskLink);
+                  }
                 }
-              } else if (taskLink && taskLink !== "#") {
-                // Fallback для случаев, когда Telegram WebApp недоступен
+              } else {
+                // Fallback только если Telegram WebApp недоступен (dev режим)
+                console.warn(
+                  "Telegram WebApp недоступен, используем window.open"
+                );
                 window.open(taskLink, "_blank", "noopener,noreferrer");
               }
             }}

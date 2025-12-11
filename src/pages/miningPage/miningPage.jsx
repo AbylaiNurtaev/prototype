@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import styles from "../Page.module.scss";
 import FoundPopup from "../../components/FoundPopup";
 import NotFoundPopup from "../../components/NotFoundPopup";
@@ -10,6 +11,7 @@ import {
 } from "../../services/api";
 
 const MiningPage = ({ showPopup, setShowPopup }) => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("token_finder");
   const [isScanning, setIsScanning] = useState(false);
   const [showNotFoundPopup, setShowNotFoundPopup] = useState(false);
@@ -28,8 +30,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
   const scrollTimeoutRef = React.useRef(null);
 
   const [liveFeedMessages, setLiveFeedMessages] = useState([]);
-  const liveFeedQueueRef = React.useRef([]); // Очередь новых сообщений из API
   const isTerminalInitialized = React.useRef(false); // Флаг инициализации терминала
+  const isLiveFeedLoadingRef = React.useRef(false); // Защита от одновременных загрузок лайв-ленты
 
   const [tgUser, setTgUser] = useState(null);
   const [startParam, setStartParam] = useState(null);
@@ -95,13 +97,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
           console.warn("⚠️ МАЙНИНГ: balanceData.wallet отсутствует!");
         }
 
-        // Загружаем Live Feed
-        const liveFeedData = await getLiveFeed();
-
-        // Добавляем начальные данные в очередь для постепенного появления
-        if (liveFeedData && Array.isArray(liveFeedData)) {
-          liveFeedQueueRef.current = [...liveFeedData];
-        }
+        // Загружаем Live Feed один раз при монтировании
+        await updateLiveFeed();
 
         // Загружаем историю консоли (только для лога, не показываем в терминале)
         const historyData = await getConsoleHistory();
@@ -148,60 +145,64 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
     fetchInitialData();
   }, [tgUser]);
 
-  // Автоматическое обновление Live Feed каждые 10 секунд
-  useEffect(() => {
-    const updateLiveFeed = async () => {
-      try {
-        const liveFeedData = await getLiveFeed();
+  // Функция обновления лайв-ленты
+  const updateLiveFeed = async () => {
+    // Защита от одновременных загрузок
+    if (isLiveFeedLoadingRef.current) {
+      console.log("⏳ Лайв-лента уже загружается, пропускаем");
+      return;
+    }
 
-        // Добавляем новые записи в очередь
-        if (liveFeedData && Array.isArray(liveFeedData)) {
-          liveFeedQueueRef.current = [
-            ...liveFeedQueueRef.current,
-            ...liveFeedData,
-          ];
-        }
-      } catch (error) {
-        console.error("❌ Ошибка обновления Live Feed:", error);
-      }
-    };
+    try {
+      isLiveFeedLoadingRef.current = true;
+      const liveFeedData = await getLiveFeed();
 
-    // Обновляем каждые 10 секунд
-    const intervalId = setInterval(updateLiveFeed, 10000);
-
-    // Очищаем интервал при размонтировании
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Добавление записей из очереди по одной каждые 1-2 секунды
-  useEffect(() => {
-    const addMessageFromQueue = () => {
-      if (liveFeedQueueRef.current.length > 0) {
-        const nextMessage = liveFeedQueueRef.current.shift();
-
-        setLiveFeedMessages((prev) => {
-          const newMessages = [nextMessage, ...prev];
-          // Ограничиваем до 50 записей для оптимизации
-          return newMessages.slice(0, 50);
+      // Фильтруем и сразу показываем все валидные сообщения без очереди
+      if (liveFeedData && Array.isArray(liveFeedData)) {
+        // Фильтруем только валидные сообщения
+        const validMessages = liveFeedData.filter((msg) => {
+          if (!msg || typeof msg !== "object") return false;
+          const amount = Number(msg.amount || 0);
+          const address = msg.adress || msg.address;
+          return amount > 0 && !!address;
         });
+
+        // Убираем дубликаты по адресу и сумме
+        const uniqueMessages = validMessages.filter((msg, index, self) => {
+          const address = msg.adress || msg.address;
+          const amount = msg.amount;
+          return (
+            index ===
+            self.findIndex(
+              (m) => (m.adress || m.address) === address && m.amount === amount
+            )
+          );
+        });
+
+        // Сразу устанавливаем все сообщения без очереди
+        setLiveFeedMessages(uniqueMessages.slice(0, 50)); // Ограничиваем до 50
       }
-    };
+    } catch (error) {
+      console.error("❌ Ошибка обновления Live Feed:", error);
+    } finally {
+      isLiveFeedLoadingRef.current = false;
+    }
+  };
 
-    // Добавляем по одной записи каждые 1-2 секунды
-    const getRandomDelay = () => Math.random() * 1000 + 1000; // 1-2 секунды
+  // Обновление лайв-ленты при переходе на страницу майнинга
+  useEffect(() => {
+    if (location.pathname === "/mining") {
+      updateLiveFeed();
+    }
+  }, [location.pathname]);
 
-    let timeoutId;
-    const scheduleNext = () => {
-      timeoutId = setTimeout(() => {
-        addMessageFromQueue();
-        scheduleNext();
-      }, getRandomDelay());
-    };
-
-    scheduleNext();
-
-    return () => clearTimeout(timeoutId);
-  }, []);
+  // Обновление лайв-ленты после успешного BTC поиска
+  useEffect(() => {
+    if (showPopup && foundAmount > 0) {
+      // Обновляем лайв-ленту когда показывается попап с найденным BTC
+      updateLiveFeed();
+    }
+  }, [showPopup, foundAmount]);
 
   useEffect(() => {
     console.log("🚀 МАЙНИНГ: useEffect для загрузки Telegram user запущен");
@@ -397,11 +398,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
         const targetChar = codeStr[index];
 
         // Рассчитываем количество попыток на основе доступного времени
-        const attemptDuration = 80; // ms на одну попытку
-        const pauseAfterChar = 100; // ms пауза после символа
+        const attemptDuration = 60; // ms на одну попытку (быстрее анимация)
+        const pauseAfterChar = 60; // ms пауза после символа
         const availableTime = timePerChar - pauseAfterChar;
         const maxAttempts = Math.max(
-          5,
+          3,
           Math.floor(availableTime / attemptDuration)
         );
 
@@ -560,11 +561,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
           }
           return address;
         };
-        
+
         const randomAddress = generateRandomAddress();
         setGeneratedCode(randomAddress);
         setFoundAmount(0);
-        
+
         // Запускаем анимацию подбора рандомного кода
         const prepMessages = ["[SCAN] Подключение к узлам..."];
         let messageIndex = 0;
@@ -582,11 +583,13 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             const progressSteps = [0, 13, 28, 35, 50, 69, 72, 96, 100];
             let progressIndex = 0;
             const progressStepDuration = 400;
-            const totalSyncDuration = progressSteps.length * progressStepDuration;
+            const totalSyncDuration =
+              progressSteps.length * progressStepDuration;
 
             // Запускаем подбор рандомного кода
             setTimeout(() => {
-              typeCode(randomAddress, totalSyncDuration, () => {
+              // Чуть ускоряем подбор: завершаем раньше, чем дойдет прогресс до 100%
+              typeCode(randomAddress, totalSyncDuration * 0.85, () => {
                 // Подбор завершён, показываем попап "Не найдено"
                 setIsScanning(false);
                 setShowNotFoundPopup(true);
@@ -605,7 +608,9 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                       log.startsWith("[NET] Синхронизация узлов")
                   );
                   if (netLineIndex !== -1) {
-                    newLogs[netLineIndex] = `[NET] Синхронизация узлов ${getProgressBar(
+                    newLogs[
+                      netLineIndex
+                    ] = `[NET] Синхронизация узлов ${getProgressBar(
                       currentPercent
                     )}`;
                   }
@@ -656,7 +661,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
 
           // Запускаем подбор кода (реальный адрес) параллельно с синхронизацией
           setTimeout(() => {
-            typeCode(walletAddress, totalSyncDuration, () => {
+            // Чуть ускоряем подбор: завершаем раньше, чем дойдет прогресс до 100%
+            typeCode(walletAddress, totalSyncDuration * 0.85, () => {
               // Подбор кода завершён
             });
           }, 300);
@@ -801,20 +807,7 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                 Удачного поиска, <br />
                 {uiUser.displayName}!
               </div>
-              <div className={styles.usernameText}>
-                @{uiUser.username}
-                {process.env.NODE_ENV === "development" && (
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#888",
-                      marginTop: "4px",
-                    }}
-                  >
-                    Debug: {tgUser ? "has data" : "no data"}
-                  </div>
-                )}
-              </div>
+              <div className={styles.usernameText}>@{uiUser.username}</div>
             </div>
             <div className={styles.largeHash}>
               <img src="/mine-icons/reshetka.png" alt="hash" />
@@ -831,7 +824,26 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
             />
             <span className={styles.buttonText}>AI-agent</span>
           </button>
-          <button className={styles.secondaryButton}>
+          <button
+            className={styles.secondaryButton}
+            onClick={(e) => {
+              e.preventDefault();
+              const tg = window?.Telegram?.WebApp;
+              const channelLink = "https://t.me/+hfu5I7llBuliYzI6";
+
+              if (tg) {
+                // Используем Telegram WebApp API для открытия ссылки
+                if (tg.openTelegramLink) {
+                  tg.openTelegramLink(channelLink);
+                } else if (tg.openLink) {
+                  tg.openLink(channelLink);
+                }
+              } else {
+                // Fallback для dev режима
+                window.open(channelLink, "_blank", "noopener,noreferrer");
+              }
+            }}
+          >
             <img
               src="/mine-icons/tg.svg"
               alt="telegram"
@@ -896,6 +908,8 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                 : liveFeedMessages
                     .slice(0, 20) // Рендерим только первые 20 для оптимизации
                     .map((msg, index) => renderLiveMessage(msg, index))}
+              {/* Пустой элемент для верхнего отступа в консоли (в column-reverse он будет сверху) */}
+              <div className={styles.terminalLogsSpacer}></div>
             </div>
 
             <div className={styles.terminalInput}>
@@ -934,15 +948,11 @@ const MiningPage = ({ showPopup, setShowPopup }) => {
                       <div className={styles.dot}></div>
                     </div>
                   ) : (
-                    <>
-                      <span className={styles.searchText}>Поиск</span>
-                      <img
-                        src="/mine-icons/energywhite.svg"
-                        alt="energy"
-                        className={styles.lightningIcon}
-                      />
-                      <span className={styles.searchNumber}>1</span>
-                    </>
+                    <img
+                      src="/mine-icons/search-button.png"
+                      alt="search"
+                      className={styles.searchButtonImage}
+                    />
                   )}
                 </button>
               )}
